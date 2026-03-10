@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashly | Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260310b" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="stylesheet" href="css/take.css" />
+    <link rel="stylesheet" href="css/comments-modal.css" />
+    <link rel="stylesheet" href="css/share-modal.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="profile" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--profile">
+      <section class="profile-column">
+        <header class="profile-head">
+          <div class="profile-head__identity">
+            <div class="profile-avatar" id="profile-avatar" aria-hidden="true">CL</div>
+            <div>
+              <h1 class="profile-username" id="profile-username">@username</h1>
+              <p class="profile-bio" id="profile-bio">Your bio will appear here.</p>
+              <p id="profile-meta-note" class="status-message profile-meta-note" hidden></p>
+            </div>
+          </div>
+
+          <div class="profile-head__meta">
+            <button type="button" class="profile-stat profile-stat--interactive" data-open-follow-list="followers">
+              <strong id="followers-count">0</strong>
+              <span>Followers</span>
+            </button>
+            <button type="button" class="profile-stat profile-stat--interactive" data-open-follow-list="following">
+              <strong id="following-count">0</strong>
+              <span>Following</span>
+            </button>
+            <div class="profile-stat">
+              <strong id="takes-count">0</strong>
+              <span>Takes</span>
+            </div>
+          </div>
+
+          <div class="profile-head__actions">
+            <a href="profile-setup.html" class="btn btn--ghost">Edit profile</a>
+            <button type="button" class="btn btn--primary is-hidden" id="follow-trigger">Follow</button>
+          </div>
+        </header>
+
+        <section class="profile-insights" aria-label="Profile insights">
+          <div class="profile-summary">
+            <article class="profile-summary__item">
+              <span class="profile-summary__label">Takes posted</span>
+              <strong id="summary-takes">0</strong>
+            </article>
+            <article class="profile-summary__item">
+              <span class="profile-summary__label">Agree received</span>
+              <strong id="summary-agree">0</strong>
+            </article>
+            <article class="profile-summary__item">
+              <span class="profile-summary__label">Disagree received</span>
+              <strong id="summary-disagree">0</strong>
+            </article>
+          </div>
+
+          <div class="profile-highlights">
+            <section class="profile-highlight">
+              <header class="profile-highlight__head">
+                <p class="profile-highlight__eyebrow">Pinned take</p>
+                <h2 class="profile-highlight__title">Lead opinion</h2>
+              </header>
+              <div id="profile-pinned-take" class="profile-highlight__body"></div>
+            </section>
+
+            <section class="profile-highlight">
+              <header class="profile-highlight__head">
+                <p class="profile-highlight__eyebrow">Most controversial</p>
+                <h2 class="profile-highlight__title">Closest split</h2>
+              </header>
+              <div id="profile-controversial-take" class="profile-highlight__body"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="profile-content">
+          <div class="profile-controls">
+            <nav class="profile-tabs" aria-label="Profile sections">
+              <button class="profile-tab profile-tab--active" data-profile-tab="takes" type="button">Takes</button>
+              <button class="profile-tab" data-profile-tab="saved" type="button">Saved</button>
+              <button class="profile-tab" data-profile-tab="replies" type="button">Replies</button>
+            </nav>
+
+            <div class="view-toggle" aria-label="View style">
+              <button class="view-toggle__btn view-toggle__btn--active" data-view="list" type="button">List</button>
+              <button class="view-toggle__btn" data-view="grid" type="button">Grid</button>
+            </div>
+          </div>
+
+          <p id="profile-feed-state" class="feed-state">Loading takes...</p>
+          <div class="profile-feed" id="profile-feed"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="follow-list-modal" class="follow-list-modal" hidden>
+      <div class="follow-list-modal__backdrop" data-close-follow-list="true"></div>
+      <section class="follow-list-modal__panel" role="dialog" aria-modal="true" aria-labelledby="follow-list-title">
+        <header class="follow-list-modal__head">
+          <div>
+            <p id="follow-list-eyebrow" class="follow-list-modal__eyebrow">Connections</p>
+            <h2 id="follow-list-title">Followers</h2>
+          </div>
+          <button type="button" class="btn btn--ghost" data-close-follow-list="true">Close</button>
+        </header>
+        <p id="follow-list-state" class="feed-state">Loading list...</p>
+        <div id="follow-list-body" class="follow-list-modal__body"></div>
+      </section>
+    </div>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/follows-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/take-renderer.js"></script>
+    <script src="js/comments-service.js"></script>
+    <script src="js/comments-renderer.js"></script>
+    <script src="js/comments-modal.js"></script>
+    <script src="js/share-modal.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/profile.js"></script>
+  </body>
+</html>
