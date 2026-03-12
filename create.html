@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashe | Create</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <script src="js/loader.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/loader.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="create" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--narrow">
+      <section class="composer">
+        <header class="composer-head">
+          <div class="composer-head__meta">
+            <p class="composer-kicker">New take</p>
+            <h1 class="page-title">Post a Take</h1>
+            <p class="composer-subtitle">Say it clearly. Keep it sharp. Start a real debate.</p>
+          </div>
+        </header>
+
+        <div class="composer-layout">
+          <form class="composer-form" id="take-form" novalidate>
+            <div class="composer-category">
+              <label for="take-category" class="field-label">Category</label>
+              <select id="take-category" name="category" required>
+                <option value="">Loading categories...</option>
+              </select>
+              <p class="composer-hint">Pick one lane so your take lands in the right debate floor.</p>
+            </div>
+
+            <label for="take-text" class="field-label">Your take</label>
+            <textarea
+              id="take-text"
+              class="take-textarea"
+              name="take"
+              rows="6"
+              maxlength="180"
+              placeholder="What's your take?"
+            ></textarea>
+
+            <p class="composer-note">Best takes are clear, opinionated, and easy for people to challenge. You can add up to three hashtags.</p>
+
+            <div class="composer-media">
+              <label for="take-image" class="field-label">Optional image</label>
+              <input id="take-image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+              <p class="composer-hint">JPG, PNG, or WEBP. Maximum file size: 5MB.</p>
+              <div class="image-preview-placeholder" id="image-preview">
+                Image preview area
+              </div>
+            </div>
+
+            <p id="composer-status" class="status-message" hidden></p>
+
+            <footer class="composer-actions">
+              <p class="char-count" id="char-count">0 / 180</p>
+              <button id="post-take-btn" type="submit" class="btn btn--primary">Post Take</button>
+            </footer>
+          </form>
+
+          <aside class="composer-side" aria-label="Posting guide">
+            <section class="composer-detail">
+              <h2 class="composer-detail__title">What lands</h2>
+              <ul class="composer-detail__list">
+                <li><strong>One sharp idea</strong><span>Lead with a position people can quickly agree or disagree with.</span></li>
+                <li><strong>Keep the tension</strong><span>Make the take opinionated enough to spark debate without losing clarity.</span></li>
+                <li><strong>Use an image only if it helps</strong><span>Visuals should strengthen the point, not decorate it.</span></li>
+              </ul>
+            </section>
+
+            <section class="composer-detail">
+              <h2 class="composer-detail__title">Post format</h2>
+              <ul class="composer-detail__list">
+                <li><strong>180 characters max</strong><span>Shorter takes usually read stronger in-feed.</span></li>
+                <li><strong>Up to 3 hashtags</strong><span>Hashtags help discovery when they stay focused and relevant.</span></li>
+                <li><strong>One image max</strong><span>Upload a single JPG, PNG, or WEBP file up to 5MB.</span></li>
+                <li><strong>Fast publish</strong><span>Your take posts directly into the live feed after submit.</span></li>
+              </ul>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="js/ux-animations.js"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/notifications-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/categories-service.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/create.js"></script>
+  </body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashe | Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <script src="js/loader.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/loader.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/take.css" />
+    <link rel="stylesheet" href="css/comments-modal.css" />
+    <link rel="stylesheet" href="css/share-modal.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="home" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--home">
+      <section class="feed-column">
+        <header class="feed-head">
+          <div class="feed-head__inner home-head">
+            <div class="home-head__left">
+              <div class="home-switch" role="tablist" aria-label="Home feed sections">
+                <button type="button" class="home-switch__btn home-switch__btn--active" data-home-tab="for-you" aria-pressed="true">
+                  For you
+                </button>
+                <button type="button" class="home-switch__btn" data-home-tab="following" aria-pressed="false">
+                  Following
+                </button>
+              </div>
+            </div>
+            <a class="home-head__brand" href="index.html" aria-label="Clashe home">
+              <img src="assets/clashly-mark.svg" alt="" />
+            </a>
+            <a class="home-head__search" href="search.html" aria-label="Search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path d="m20 20-4.2-4.2"></path>
+              </svg>
+            </a>
+          </div>
+        </header>
+
+        <p id="feed-state" class="feed-state">Loading takes...</p>
+        <section id="feed-stream" class="feed-stream" aria-label="Take feed">
+        </section>
+      </section>
+
+      <aside class="side-column" aria-label="Supplementary feed context">
+        <section class="side-block">
+          <h2 class="side-block__title">Pulse</h2>
+          <ul class="topic-list">
+            <li><a href="hashtag.html?tag=interfacewars">#interfacewars</a></li>
+            <li><a href="hashtag.html?tag=remoteculture">#remoteculture</a></li>
+            <li><a href="hashtag.html?tag=creatorburnout">#creatorburnout</a></li>
+            <li><a href="hashtag.html?tag=launchweek">#launchweek</a></li>
+          </ul>
+        </section>
+
+        <section class="side-block">
+          <h2 class="side-block__title">Active Debate</h2>
+          <p class="side-block__text">
+            Should social apps show downvotes publicly or only weight ranking silently?
+          </p>
+          <a href="take.html" class="text-link">Join thread</a>
+        </section>
+      </aside>
+    </main>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="js/ux-animations.js"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/notifications-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/personalization-service.js"></script>
+    <script src="js/categories-service.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/take-renderer.js"></script>
+    <script src="js/comments-service.js"></script>
+    <script src="js/comments-renderer.js"></script>
+    <script src="js/comments-modal.js"></script>
+    <script src="js/share-modal.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/home.js"></script>
+  </body>
+</html>

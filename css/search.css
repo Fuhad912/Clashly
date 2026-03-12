@@ -1,0 +1,528 @@
+.search-shell {
+  background: var(--color-surface);
+  border-left: var(--line);
+  border-right: var(--line);
+  position: relative;
+  overflow: clip;
+}
+
+.search-shell__head {
+  padding: 22px var(--space-4) 18px;
+  background:
+    linear-gradient(180deg, var(--color-surface-soft) 0%, var(--color-surface) 68%);
+}
+
+.search-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
+}
+
+.search-back-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.search-shell__title .page-title {
+  margin-top: 4px;
+  font-size: clamp(1.85rem, 2vw, 2.4rem);
+}
+
+.search-discovery {
+  padding: 0 var(--space-4) 22px;
+  border-bottom: var(--line);
+}
+
+.search-hero__eyebrow,
+.search-panel__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.search-panels {
+  display: grid;
+}
+
+.search-panel {
+  padding: 22px 0 0;
+}
+
+.search-panel__title {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.search-discovery__state {
+  margin: 16px 0 0;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.search-discovery__state.is-error {
+  color: var(--color-disagree);
+}
+
+.search-topic-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.search-topic-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border: var(--line);
+  background: linear-gradient(180deg, var(--color-surface-soft) 0%, var(--color-surface) 100%);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.search-topic-card:hover,
+.search-topic-card:focus-visible {
+  border-color: var(--color-text);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-soft) 100%);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-2px);
+}
+
+.search-topic-card__lead {
+  display: grid;
+  gap: 6px;
+}
+
+.search-topic-card__rank {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.search-topic-card__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.search-topic-card__meta {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.search-topic-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 12px;
+  border-top: var(--line);
+}
+
+.search-topic-card__stat {
+  display: grid;
+  gap: 4px;
+}
+
+.search-topic-card__stat strong {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.search-topic-card__stat span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 780px) {
+  .search-topic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1120px) {
+  .search-topic-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.page-search {
+  position: relative;
+  padding: 18px var(--space-4) 0;
+}
+
+.page-search--home {
+  padding-inline: 0;
+}
+
+.page-search--results {
+  padding-inline: 0;
+}
+
+.page-search__field {
+  position: relative;
+  display: block;
+}
+
+.page-search__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.page-search__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.page-search__input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px 0 42px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  background: var(--color-surface);
+}
+
+.page-search--home .page-search__field {
+  border-bottom: var(--line);
+}
+
+.page-search--home .page-search__icon {
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text);
+  opacity: 0.58;
+}
+
+.page-search--home .page-search__input {
+  min-height: 40px;
+  padding: 0 0 0 30px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.94rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.page-search--home .page-search__input:hover,
+.page-search--home .page-search__input:focus {
+  border: 0;
+  background: transparent;
+}
+
+.page-search--home .page-search__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 25;
+  background: var(--color-surface);
+  border: var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.search-suggestions__group + .search-suggestions__group {
+  border-top: var(--line);
+}
+
+.search-suggestions__label {
+  padding: 10px 14px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.search-suggestions__item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: var(--line);
+}
+
+.search-suggestions__group .search-suggestions__item:first-of-type {
+  border-top: 0;
+}
+
+.search-suggestions__item:hover {
+  background: var(--color-hover);
+}
+
+.search-suggestions__item.is-active {
+  background: var(--color-hover);
+}
+
+.search-suggestions__item--hashtag,
+.search-suggestions__item--take {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.search-suggestions__avatar {
+  width: 38px;
+  height: 38px;
+  border: var(--line);
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.search-suggestions__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-suggestions__content {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.search-suggestions__title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-suggestions__meta {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-suggestions__empty {
+  padding: 14px;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.search-group {
+  border-top: var(--line);
+}
+
+.search-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px var(--space-4);
+  border-bottom: var(--line);
+  background: var(--color-surface);
+}
+
+.search-group__head h2 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.search-list {
+  display: block;
+}
+
+.search-result {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 18px var(--space-4);
+  border-bottom: var(--line);
+}
+
+.search-result:last-child {
+  border-bottom: 0;
+}
+
+.search-result__avatar {
+  width: 44px;
+  height: 44px;
+  border: var(--line);
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.search-result__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-result__content {
+  min-width: 0;
+}
+
+.search-result__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.search-result__title:hover {
+  text-decoration: underline;
+}
+
+.search-result__meta {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.search-result__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: var(--line);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+  background: var(--color-surface);
+  white-space: nowrap;
+}
+
+.search-result__action:hover {
+  background: var(--color-hover);
+}
+
+.search-result--hashtag {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.search-result--hashtag .search-result__title {
+  font-family: var(--font-serif);
+  font-size: 1.08rem;
+}
+
+@media (min-width: 900px) {
+  .search-shell__head {
+    padding: 28px 32px 22px;
+  }
+
+  .search-discovery {
+    padding: 0 32px 28px;
+  }
+
+  .page-search {
+    padding: 18px 32px 0;
+  }
+
+  .search-group__head,
+  .search-result,
+  .search-state,
+  .feed-empty {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+/* ── Polish improvements ───────────────────────────────────── */
+
+/* Rounder search input on search page */
+.page-search__input {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+  padding-left: 44px;
+}
+
+:root[data-theme="dark"] .page-search__input {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+}
+
+/* Topic cards — remove the hover lift which can feel busy */
+.search-topic-card:hover,
+.search-topic-card:focus-visible {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-muted);
+}
+
+/* Dark mode search topic cards */
+:root[data-theme="dark"] .search-topic-card {
+  background: var(--color-surface-muted);
+}
+
+:root[data-theme="dark"] .search-topic-card:hover {
+  background: var(--color-surface-soft);
+  border-color: var(--color-border-strong);
+}
+
+/* Dark mode suggestions dropdown */
+:root[data-theme="dark"] .search-suggestions {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme="dark"] .search-suggestions__label {
+  background: var(--color-surface);
+}
+
+:root[data-theme="dark"] .search-suggestions__item:hover,
+:root[data-theme="dark"] .search-suggestions__item.is-active {
+  background: var(--color-hover);
+}

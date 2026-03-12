@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashe | Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <script src="js/loader.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/loader.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="stylesheet" href="css/take.css" />
+    <link rel="stylesheet" href="css/comments-modal.css" />
+    <link rel="stylesheet" href="css/share-modal.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="profile" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--profile">
+      <section class="profile-column">
+        <header class="profile-head">
+          <div class="profile-head__handle-row">
+            <h1 class="profile-username" id="profile-username">@username</h1>
+            <a class="profile-head__settings-btn" href="settings.html" aria-label="Open settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3.1"></circle>
+                <path d="M19 12a7 7 0 0 0-.07-.99l2.11-1.65-2-3.46-2.54 1a7.24 7.24 0 0 0-1.71-.99l-.38-2.69h-4l-.38 2.69a7.24 7.24 0 0 0-1.71.99l-2.54-1-2 3.46 2.11 1.65A7 7 0 0 0 5 12c0 .34.02.67.07.99L2.96 14.64l2 3.46 2.54-1c.52.41 1.1.74 1.71.99l.38 2.69h4l.38-2.69c.61-.25 1.19-.58 1.71-.99l2.54 1 2-3.46-2.11-1.65c.05-.32.07-.65.07-.99Z"></path>
+              </svg>
+            </a>
+          </div>
+
+          <div class="profile-head__hero">
+            <div class="profile-avatar" id="profile-avatar" aria-hidden="true">CL</div>
+            <div class="profile-head__meta">
+              <div class="profile-stat">
+                <strong id="takes-count">0</strong>
+                <span>Takes</span>
+              </div>
+              <button type="button" class="profile-stat profile-stat--interactive" data-open-follow-list="followers">
+                <strong id="followers-count">0</strong>
+                <span>Followers</span>
+              </button>
+              <button type="button" class="profile-stat profile-stat--interactive" data-open-follow-list="following">
+                <strong id="following-count">0</strong>
+                <span>Following</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-head__bio-wrap">
+            <p class="profile-bio" id="profile-bio">Your bio will appear here.</p>
+            <p id="profile-meta-note" class="status-message profile-meta-note" hidden></p>
+          </div>
+
+          <div class="profile-head__actions">
+            <button type="button" id="edit-profile-trigger" class="btn btn--ghost">Edit profile</button>
+            <button type="button" id="share-profile-trigger" class="btn btn--ghost">Share profile</button>
+            <button type="button" class="btn btn--primary is-hidden" id="follow-trigger">Follow</button>
+          </div>
+        </header>
+
+        <section class="profile-content">
+          <div class="profile-controls">
+            <nav class="profile-tabs" aria-label="Profile sections">
+              <button class="profile-tab profile-tab--active" data-profile-tab="takes" type="button">Takes</button>
+              <button class="profile-tab" data-profile-tab="saved" type="button">Saved</button>
+            </nav>
+
+            <div class="view-toggle" aria-label="View style">
+              <button class="view-toggle__btn view-toggle__btn--active" data-view="list" type="button">List</button>
+              <button class="view-toggle__btn" data-view="grid" type="button">Grid</button>
+            </div>
+          </div>
+
+          <p id="profile-feed-state" class="feed-state">Loading takes...</p>
+          <div class="profile-feed" id="profile-feed"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="edit-profile-modal" class="edit-profile-modal" hidden>
+      <div class="edit-profile-modal__backdrop" data-close-edit-profile="true"></div>
+      <section class="edit-profile-modal__panel" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+        <header class="edit-profile-modal__head">
+          <div>
+            <p class="edit-profile-modal__eyebrow">Profile</p>
+            <h2 id="edit-profile-title">Edit profile</h2>
+          </div>
+          <button type="button" class="btn btn--ghost" data-close-edit-profile="true" aria-label="Close edit profile modal">X</button>
+        </header>
+
+        <form id="edit-profile-form" class="edit-profile-form" novalidate>
+          <div class="edit-profile-avatar">
+            <div class="profile-avatar edit-profile-avatar__preview" id="edit-profile-avatar-preview" aria-hidden="true">CL</div>
+            <label class="btn btn--ghost edit-profile-avatar__upload" for="edit-profile-avatar-input">Change photo</label>
+            <input
+              id="edit-profile-avatar-input"
+              name="avatar"
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              hidden
+            />
+          </div>
+
+          <label class="field-label" for="edit-profile-username">Username</label>
+          <input id="edit-profile-username" name="username" type="text" maxlength="20" required />
+
+          <label class="field-label" for="edit-profile-bio">Bio</label>
+          <textarea id="edit-profile-bio" name="bio" rows="4" maxlength="280" placeholder="Write a short bio"></textarea>
+
+          <label class="field-label" for="edit-profile-dob">Date of birth</label>
+          <input id="edit-profile-dob" name="date_of_birth" type="date" />
+
+          <p id="edit-profile-status" class="status-message" hidden></p>
+
+          <footer class="edit-profile-modal__actions">
+            <button type="button" class="btn btn--ghost" data-close-edit-profile="true">Cancel</button>
+            <button type="submit" class="btn btn--primary" id="edit-profile-submit">Save changes</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+
+    <div id="follow-list-modal" class="follow-list-modal" hidden>
+      <div class="follow-list-modal__backdrop" data-close-follow-list="true"></div>
+      <section class="follow-list-modal__panel" role="dialog" aria-modal="true" aria-labelledby="follow-list-title">
+        <header class="follow-list-modal__head">
+          <div>
+            <p id="follow-list-eyebrow" class="follow-list-modal__eyebrow">Connections</p>
+            <h2 id="follow-list-title">Followers</h2>
+          </div>
+          <button type="button" class="btn btn--ghost" data-close-follow-list="true">X</button>
+        </header>
+        <p id="follow-list-state" class="feed-state">Loading list...</p>
+        <div id="follow-list-body" class="follow-list-modal__body"></div>
+      </section>
+    </div>
+
+    <div id="profile-share-modal" class="profile-share-modal" hidden>
+      <div class="profile-share-modal__backdrop" data-close-profile-share="true"></div>
+      <section class="profile-share-modal__panel" role="dialog" aria-modal="true" aria-labelledby="profile-share-title">
+        <header class="profile-share-modal__head">
+          <div>
+            <p class="profile-share-modal__eyebrow">Share profile</p>
+            <h2 id="profile-share-title">Send to</h2>
+          </div>
+          <button type="button" class="btn btn--ghost" data-close-profile-share="true" aria-label="Close profile share modal">X</button>
+        </header>
+
+        <article id="profile-share-preview" class="profile-share-preview"></article>
+        <p id="profile-share-status" class="feed-state" hidden></p>
+
+        <div class="profile-share-actions" aria-label="Profile share actions">
+          <button type="button" class="profile-share-action" data-profile-share-action="instagram">
+            <span class="profile-share-action__orb profile-share-action__orb--instagram" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="4"></rect>
+                <circle cx="12" cy="12" r="3.5"></circle>
+                <circle cx="17.2" cy="6.8" r="1"></circle>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">Instagram</span>
+          </button>
+
+          <a href="#" class="profile-share-action" data-profile-share-link="whatsapp" target="_blank" rel="noreferrer">
+            <span class="profile-share-action__orb profile-share-action__orb--whatsapp" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 11.6a8 8 0 0 1-11.8 7l-4.2 1.1 1.1-4.1A8 8 0 1 1 20 11.6Z"></path>
+                <path d="M9.1 8.7c.2-.4.4-.4.7-.4h.6c.2 0 .4 0 .5.4l.8 1.8c.1.2.1.4 0 .6l-.4.7c-.1.2 0 .4.1.5.4.7 1.1 1.4 1.9 1.8.2.1.4.1.6 0l.7-.4c.2-.1.4-.1.6 0l1.8.8c.4.2.4.3.4.6v.5c0 .3-.1.5-.4.7-.5.3-1 .5-1.7.5-1 0-2-.4-3.1-1.2a9.1 9.1 0 0 1-2.4-2.6c-.7-1-.9-1.9-.9-2.7 0-.6.2-1.1.5-1.4Z"></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">WhatsApp</span>
+          </a>
+
+          <a href="#" class="profile-share-action" data-profile-share-link="facebook" target="_blank" rel="noreferrer">
+            <span class="profile-share-action__orb profile-share-action__orb--facebook" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M14.2 21v-7.2h2.5l.4-3h-2.9V8.8c0-.9.2-1.5 1.5-1.5H17V4.6c-.3 0-1.1-.1-2-.1-2.4 0-4.1 1.4-4.1 4.2v2.1H8.4v3h2.5V21h3.3Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">Facebook</span>
+          </a>
+
+          <a href="#" class="profile-share-action" data-profile-share-link="x" target="_blank" rel="noreferrer">
+            <span class="profile-share-action__orb profile-share-action__orb--x" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M18.244 2H21l-6.56 7.5L22.2 22h-6.1l-4.8-6.2L5.86 22H3.1l7.02-8.02L2 2h6.26l4.33 5.67L18.244 2Zm-1.07 18h1.69L6.11 3.9H4.29L17.17 20Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">X</span>
+          </a>
+
+          <a href="#" class="profile-share-action" data-profile-share-link="telegram" target="_blank" rel="noreferrer">
+            <span class="profile-share-action__orb profile-share-action__orb--telegram" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="m21 4-3.7 16.4c-.1.6-.6.8-1.1.5l-5.2-3.9-2.5 2.4c-.3.3-.5.5-1 .5l.4-5.3L17.6 6c.4-.3-.1-.5-.6-.2L5 13.3l-5-1.6c-1-.3-1-1 .2-1.5L19.2 3c.9-.3 2 .2 1.8 1Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">Telegram</span>
+          </a>
+
+          <button type="button" class="profile-share-action" data-profile-share-action="copy-link">
+            <span class="profile-share-action__orb profile-share-action__orb--copy" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.6 13.4 8.5 15.5a3 3 0 1 1-4.2-4.2l2.1-2.1"></path>
+                <path d="M13.4 10.6 15.5 8.5a3 3 0 1 1 4.2 4.2l-2.1 2.1"></path>
+                <path d="m9 15 6-6"></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">Link</span>
+          </button>
+
+          <button type="button" class="profile-share-action" data-profile-share-action="download-qr">
+            <span class="profile-share-action__orb profile-share-action__orb--download" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 4v10"></path>
+                <path d="m8.5 10.5 3.5 3.5 3.5-3.5"></path>
+                <path d="M4 19.5h16"></path>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">Download</span>
+          </button>
+
+          <button type="button" class="profile-share-action" data-profile-share-action="more">
+            <span class="profile-share-action__orb profile-share-action__orb--more" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="6" cy="12" r="1.5"></circle>
+                <circle cx="12" cy="12" r="1.5"></circle>
+                <circle cx="18" cy="12" r="1.5"></circle>
+              </svg>
+            </span>
+            <span class="profile-share-action__label">More</span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="js/ux-animations.js"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/notifications-service.js"></script>
+    <script src="js/follows-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/categories-service.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/take-renderer.js"></script>
+    <script src="js/comments-service.js"></script>
+    <script src="js/comments-renderer.js"></script>
+    <script src="js/comments-modal.js"></script>
+    <script src="js/share-modal.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/profile.js"></script>
+  </body>
+</html>

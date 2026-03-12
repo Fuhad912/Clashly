@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashe | Category</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <script src="js/loader.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/loader.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/comments-modal.css" />
+    <link rel="stylesheet" href="css/share-modal.css" />
+    <link rel="stylesheet" href="css/explore.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="category" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--home">
+      <section class="feed-column">
+        <header class="feed-head category-head">
+          <div class="feed-head__inner">
+            <p class="section-kicker">Category floor</p>
+            <h1 id="category-title" class="page-title">Category</h1>
+            <p id="category-subtitle" class="section-subtitle">Loading lane...</p>
+          </div>
+          <div class="category-head__actions">
+            <a id="category-back-link" class="text-link" href="explore.html">Back to Explore</a>
+          </div>
+        </header>
+
+        <div id="category-keywords" class="explore-card__topics category-keywords" hidden></div>
+        <p id="category-feed-state" class="feed-state">Loading takes...</p>
+        <section id="category-feed-stream" class="feed-stream" aria-label="Category take feed"></section>
+      </section>
+    </main>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="js/ux-animations.js"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/notifications-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/personalization-service.js"></script>
+    <script src="js/categories-service.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/take-renderer.js"></script>
+    <script src="js/comments-service.js"></script>
+    <script src="js/comments-renderer.js"></script>
+    <script src="js/comments-modal.js"></script>
+    <script src="js/share-modal.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/category.js"></script>
+  </body>
+</html>
