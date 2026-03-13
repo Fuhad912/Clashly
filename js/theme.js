@@ -12,13 +12,6 @@
     }
   }
 
-  function detectPreferredTheme() {
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return DARK;
-    }
-    return LIGHT;
-  }
-
   function getActiveTheme() {
     return document.documentElement.dataset.theme === DARK ? DARK : LIGHT;
   }
@@ -74,7 +67,8 @@
     updateToggleLabel();
   }
 
-  applyTheme(readStoredTheme() || detectPreferredTheme());
+  // Default to light mode unless the user has explicitly chosen a theme before.
+  applyTheme(readStoredTheme() || LIGHT);
   bindToggle();
 
   window.ClashlyTheme = {
