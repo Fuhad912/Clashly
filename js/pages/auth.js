@@ -5,6 +5,7 @@
 
   let mode = "login";
   let pendingOtpEmail = "";
+  let pendingSignupPassword = "";
   let otpModalAnimation = null;
   let forgotModalAnimation = null;
   let forgotAutoCloseTimer = null;
@@ -320,6 +321,7 @@
     }
 
     pendingOtpEmail = "";
+    pendingSignupPassword = "";
     closeOtpModal();
     closeForgotModal();
     setStatus("", "");
@@ -361,8 +363,26 @@
     return "";
   }
 
+  function extractAuthErrorMessage(error) {
+    if (!error) return "Authentication failed.";
+    if (typeof error === "string") return error;
+    if (error instanceof Error) return error.message || "Authentication failed.";
+    if (typeof error === "object") {
+      const candidate = error.message || error.msg || error.error_description || error.description || error.error;
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+    return "Authentication failed.";
+  }
+
+  function isEmailDeliveryFailure(message) {
+    const normalized = String(message || "").toLowerCase();
+    return normalized.includes("error sending confirmation email") || normalized.includes("error sending email");
+  }
+
   function mapAuthError(error) {
-    const raw = error instanceof Error ? error.message : "Authentication failed.";
+    const raw = extractAuthErrorMessage(error);
     const message = raw.toLowerCase();
 
     if (message.includes("invalid login credentials")) {
@@ -389,11 +409,16 @@
       return "Too many email requests. Wait about 60 seconds, then try again.";
     }
 
+    if (isEmailDeliveryFailure(message)) {
+      return "Could not send verification email. Check Supabase email settings, then try again.";
+    }
+
     if (message.includes("provider is not enabled") || message.includes("unsupported provider")) {
       return "Google sign-in is not enabled in Supabase Auth settings yet.";
     }
 
-    return window.ClashlyUtils.reportError("Auth flow failed.", error, "Authentication failed. Please try again.");
+    const fallback = raw && raw !== "Authentication failed." ? raw : "Authentication failed. Please try again.";
+    return window.ClashlyUtils.reportError("Auth flow failed.", error, fallback);
   }
 
   function buildResetRedirectUrl() {
@@ -401,9 +426,18 @@
     return new URL("reset-password.html", cleanHref).toString();
   }
 
-  function buildGoogleRedirectUrl() {
+  function buildAuthRedirectUrl() {
     const cleanHref = window.location.href.split("#")[0].split("?")[0];
     return new URL("auth.html", cleanHref).toString();
+  }
+
+  function buildGoogleRedirectUrl() {
+    return buildAuthRedirectUrl();
+  }
+
+  function resolveAuthRedirectUrl() {
+    const redirectUrl = buildAuthRedirectUrl();
+    return /^https?:\/\//i.test(redirectUrl) ? redirectUrl : "";
   }
 
   function showOtpStep(email) {
@@ -471,6 +505,15 @@
     });
   }
 
+  async function redirectAfterAuth(userId) {
+    const profileCheck = await window.ClashlyProfiles.hasCompletedProfile(userId);
+    if (profileCheck.error) {
+      throw profileCheck.error;
+    }
+
+    window.location.replace(profileCheck.completed ? "index.html" : "profile-setup.html");
+  }
+
   async function handleLogin(email, password) {
     const signInResult = await window.ClashlyAuth.signInWithEmail(email, password);
     if (signInResult.error) {
@@ -482,22 +525,54 @@
       throw new Error("Login succeeded but user data was unavailable.");
     }
 
-    const profileCheck = await window.ClashlyProfiles.hasCompletedProfile(userId);
-    if (profileCheck.error) {
-      throw profileCheck.error;
-    }
-
-    window.location.replace(profileCheck.completed ? "index.html" : "profile-setup.html");
+    await redirectAfterAuth(userId);
   }
 
   async function handleSignUp(email, password) {
-    const signUpResult = await window.ClashlyAuth.signUpWithEmail(email, password);
-    if (signUpResult.error) {
+    pendingSignupPassword = "";
+    const signUpResult = await window.ClashlyAuth.signUpWithEmail(email, password, resolveAuthRedirectUrl());
+    if (!signUpResult.error) {
+      const user = signUpResult.data && signUpResult.data.user ? signUpResult.data.user : null;
+      const session = signUpResult.data && signUpResult.data.session ? signUpResult.data.session : null;
+
+      // If email confirmations are disabled, signup can already return a session.
+      if (user && session) {
+        await redirectAfterAuth(user.id);
+        return;
+      }
+
+      showOtpStep(email);
+      setStatus("Account created. Enter the verification code sent to your email.", "success");
+      return;
+    }
+
+    const signUpMessage = extractAuthErrorMessage(signUpResult.error);
+    if (!isEmailDeliveryFailure(signUpMessage)) {
       throw signUpResult.error;
     }
 
+    // In some backend states, user creation can succeed even if confirmation delivery fails.
+    const loginFallback = await window.ClashlyAuth.signInWithEmail(email, password);
+    if (!loginFallback.error && loginFallback.data && loginFallback.data.user) {
+      await redirectAfterAuth(loginFallback.data.user.id);
+      return;
+    }
+
+    // Fallback path: if signup confirmation email fails, try OTP signup flow.
+    pendingSignupPassword = password;
+    const otpResult = await window.ClashlyAuth.sendEmailOtp(email, true);
+    if (otpResult.error) {
+      pendingSignupPassword = "";
+      if (isEmailDeliveryFailure(extractAuthErrorMessage(otpResult.error))) {
+        throw new Error(
+          "Supabase could not send verification email. Fix Auth -> Email settings/templates and try again."
+        );
+      }
+      throw otpResult.error;
+    }
+
     showOtpStep(email);
-    setStatus("Account created. Enter the verification code sent to your email.", "success");
+    setStatus("Verification code sent. Enter the code from your email to finish creating your account.", "success");
   }
 
   async function handleForgotPassword(email) {
@@ -542,12 +617,15 @@
       throw new Error("OTP verified but user session was unavailable.");
     }
 
-    const profileCheck = await window.ClashlyProfiles.hasCompletedProfile(user.id);
-    if (profileCheck.error) {
-      throw profileCheck.error;
+    if (pendingSignupPassword) {
+      const setPasswordResult = await window.ClashlyAuth.updatePassword(pendingSignupPassword);
+      if (setPasswordResult.error) {
+        throw setPasswordResult.error;
+      }
+      pendingSignupPassword = "";
     }
 
-    window.location.replace(profileCheck.completed ? "index.html" : "profile-setup.html");
+    await redirectAfterAuth(user.id);
   }
 
   function initOtpForm() {
@@ -585,7 +663,9 @@
       otpResend.disabled = true;
       otpResend.textContent = "Resending...";
       try {
-        const resendResult = await window.ClashlyAuth.resendSignupOtp(pendingOtpEmail);
+        const resendResult = pendingSignupPassword
+          ? await window.ClashlyAuth.sendEmailOtp(pendingOtpEmail, true)
+          : await window.ClashlyAuth.resendSignupOtp(pendingOtpEmail);
         if (resendResult.error) {
           throw resendResult.error;
         }
