@@ -12,12 +12,20 @@
     return client;
   }
 
-  async function signUpWithEmail(email, password) {
+  async function signUpWithEmail(email, password, redirectTo) {
     const client = getClientOrThrow();
-    return client.auth.signUp({
+    const payload = {
       email,
       password,
-    });
+    };
+
+    if (redirectTo) {
+      payload.options = {
+        emailRedirectTo: redirectTo,
+      };
+    }
+
+    return client.auth.signUp(payload);
   }
 
   async function signInWithEmail(email, password) {
