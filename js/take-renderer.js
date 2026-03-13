@@ -138,45 +138,58 @@
 
     return `
       <footer class="take-item__actions-wrapper" aria-label="Take actions">
-        <div class="take-item__actions" aria-label="Take actions">
-          <button
-            type="button"
-            class="take-action take-action--vote take-action--agree${agreeSelected}"
-            data-action="vote"
-            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-            data-vote-type="agree"
-            aria-label="Agree with take"
-            ${loadingAttr}
-          >
-            <span class="take-action__stack">
-              <span class="take-action__lead">
-                <span class="take-action__icon">${renderActionIcon("agree")}</span>
-                <span class="take-action__count">${voteData.agreeCount}</span>
+        <div class="take-item__actions-top">
+          <div class="take-item__actions" aria-label="Primary take actions">
+            <button
+              type="button"
+              class="take-action take-action--vote take-action--agree${agreeSelected}"
+              data-action="vote"
+              data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+              data-vote-type="agree"
+              aria-label="Agree with take"
+              ${loadingAttr}
+            >
+              <span class="take-action__stack">
+                <span class="take-action__lead">
+                  <span class="take-action__icon">${renderActionIcon("agree")}</span>
+                  <span class="take-action__count">${voteData.agreeCount}</span>
+                </span>
+                <span class="take-action__label">Agree</span>
               </span>
-              <span class="take-action__label">Agree</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            class="take-action take-action--vote take-action--disagree${disagreeSelected}"
-            data-action="vote"
-            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-            data-vote-type="disagree"
-            aria-label="Disagree with take"
-            ${loadingAttr}
-          >
-            <span class="take-action__stack">
-              <span class="take-action__lead">
-                <span class="take-action__icon">${renderActionIcon("disagree")}</span>
-                <span class="take-action__count">${voteData.disagreeCount}</span>
+            </button>
+            <button
+              type="button"
+              class="take-action take-action--vote take-action--disagree${disagreeSelected}"
+              data-action="vote"
+              data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+              data-vote-type="disagree"
+              aria-label="Disagree with take"
+              ${loadingAttr}
+            >
+              <span class="take-action__stack">
+                <span class="take-action__lead">
+                  <span class="take-action__icon">${renderActionIcon("disagree")}</span>
+                  <span class="take-action__count">${voteData.disagreeCount}</span>
+                </span>
+                <span class="take-action__label">Disagree</span>
               </span>
-              <span class="take-action__label">Disagree</span>
-            </span>
-          </button>
-          ${commentsAction}
+            </button>
+            ${commentsAction}
+            <button
+              type="button"
+              class="take-action"
+              data-action="share"
+              data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+              data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
+              aria-label="Share take"
+              title="Share take"
+            >
+              <span class="take-action__icon">${renderActionIcon("share")}</span>
+            </button>
+          </div>
           <button
             type="button"
-            class="take-action take-action--bookmark${bookmarkSelected}"
+            class="take-action take-action--bookmark take-item__save-action${bookmarkSelected}"
             data-action="bookmark"
             data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
             data-bookmarked="${take && take.bookmarked ? "true" : "false"}"
@@ -184,17 +197,6 @@
             title="${bookmarkLabel} take"
           >
             <span class="take-action__icon">${renderActionIcon("bookmark")}</span>
-          </button>
-          <button
-            type="button"
-            class="take-action"
-            data-action="share"
-            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-            data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
-            aria-label="Share take"
-            title="Share take"
-          >
-            <span class="take-action__icon">${renderActionIcon("share")}</span>
           </button>
         </div>
         ${renderVoteSplit(voteData)}
