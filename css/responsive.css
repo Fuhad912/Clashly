@@ -104,17 +104,25 @@
   }
 
   /* Actions */
+  .take-item__actions-top {
+    gap: 10px;
+  }
+
+  .take-item__actions {
+    gap: 3px;
+  }
+
   .take-action {
-    min-height: 32px;
-    min-width: 34px;
-    padding: 0 6px;
+    min-height: 38px;
+    min-width: 40px;
+    padding: 0 9px;
   }
 
   .take-action--vote {
-    min-width: 64px;
-    height: 30px;
-    min-height: 30px;
-    padding: 0 8px;
+    min-width: 76px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 10px;
   }
 
   .take-vote-split {
@@ -356,13 +364,16 @@
   }
 
   .take-action {
-    min-width: 30px;
-    padding: 0 5px;
+    min-height: 36px;
+    min-width: 38px;
+    padding: 0 8px;
   }
 
   .take-action--vote {
-    min-width: 58px;
-    padding: 0 6px;
+    min-width: 70px;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 9px;
   }
 
   .profile-head__hero {
