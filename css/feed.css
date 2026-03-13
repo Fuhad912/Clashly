@@ -330,6 +330,12 @@
   margin-top: 10px;
 }
 
+.take-item__actions-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ── Feed stream overrides (tighter density) ───────────────── */
 
 .feed-stream .take-item,
@@ -379,12 +385,14 @@
 .take-item__actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0;
+  gap: 4px;
   align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  margin-left: -8px;
+  margin-left: 0;
 }
 
 .take-item__actions::-webkit-scrollbar {
@@ -395,12 +403,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  min-width: 36px;
-  padding: 0 8px;
+  min-height: 40px;
+  min-width: 42px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--radius-1);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--color-text-muted);
   background: transparent;
@@ -409,8 +417,8 @@
 }
 
 .take-action svg {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -419,21 +427,26 @@
 }
 
 .take-action--vote {
-  min-width: 72px;
-  padding: 0 8px;
+  min-width: 86px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border);
   background: var(--color-surface-soft);
   color: var(--color-text);
-  height: 32px;
-  min-height: 32px;
+  height: 38px;
+  min-height: 38px;
   transition: border-color 130ms ease, background 130ms ease;
 }
 
 .take-action:not(.take-action--vote) {
-  min-width: 38px;
-  padding: 0 8px;
+  min-width: 44px;
+  padding: 0 10px;
   color: var(--color-text-muted);
+}
+
+.take-item__save-action {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .take-action__stack {
@@ -441,13 +454,13 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .take-action__lead {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .take-action__icon {
@@ -458,7 +471,7 @@
 }
 
 .take-action__count {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: inherit;
   line-height: 1;
