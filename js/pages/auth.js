@@ -2,6 +2,7 @@
   const MIN_PASSWORD_LEN = 8;
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const OTP_PATTERN = /^[0-9]{6}$/;
+  const OAUTH_INTENT_KEY = "clashe_oauth_intent";
 
   let mode = "login";
   let pendingOtpEmail = "";
@@ -417,6 +418,10 @@
       return "Google sign-in is not enabled in Supabase Auth settings yet.";
     }
 
+    if (message.includes("access_denied") || message.includes("oauth") || message.includes("provider")) {
+      return "Google sign-in was canceled or failed. Check Supabase redirect URL settings and try again.";
+    }
+
     const fallback = raw && raw !== "Authentication failed." ? raw : "Authentication failed. Please try again.";
     return window.ClashlyUtils.reportError("Auth flow failed.", error, fallback);
   }
@@ -438,6 +443,57 @@
   function resolveAuthRedirectUrl() {
     const redirectUrl = buildAuthRedirectUrl();
     return /^https?:\/\//i.test(redirectUrl) ? redirectUrl : "";
+  }
+
+  function getOAuthCodeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return String(params.get("code") || "").trim();
+  }
+
+  function getOAuthErrorFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return String(params.get("error_description") || params.get("error") || "").trim();
+  }
+
+  function setOAuthIntent(intent) {
+    try {
+      window.sessionStorage.setItem(OAUTH_INTENT_KEY, intent);
+    } catch (_error) {
+      // Ignore storage access errors.
+    }
+  }
+
+  function getOAuthIntent() {
+    try {
+      return String(window.sessionStorage.getItem(OAUTH_INTENT_KEY) || "").trim();
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function clearOAuthIntent() {
+    try {
+      window.sessionStorage.removeItem(OAUTH_INTENT_KEY);
+    } catch (_error) {
+      // Ignore storage access errors.
+    }
+  }
+
+  function clearOAuthParamsFromUrl() {
+    const url = new URL(window.location.href);
+    const hadOauthParams =
+      url.searchParams.has("code") ||
+      url.searchParams.has("error") ||
+      url.searchParams.has("error_description") ||
+      url.searchParams.has("state");
+
+    if (!hadOauthParams) return;
+
+    url.searchParams.delete("code");
+    url.searchParams.delete("error");
+    url.searchParams.delete("error_description");
+    url.searchParams.delete("state");
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
   }
 
   function showOtpStep(email) {
@@ -587,10 +643,52 @@
   }
 
   async function handleGoogleAuth() {
-    const oauthResult = await window.ClashlyAuth.signInWithGoogle(buildGoogleRedirectUrl());
+    setOAuthIntent(mode === "signup" ? "signup" : "login");
+    const oauthResult = await window.ClashlyAuth.signInWithGoogle(resolveAuthRedirectUrl());
     if (oauthResult.error) {
+      clearOAuthIntent();
       throw oauthResult.error;
     }
+  }
+
+  async function handleGoogleCallback() {
+    const oauthError = getOAuthErrorFromUrl();
+    if (oauthError) {
+      clearOAuthIntent();
+      clearOAuthParamsFromUrl();
+      throw new Error(oauthError);
+    }
+
+    const code = getOAuthCodeFromUrl();
+    if (!code) return false;
+
+    const exchangeResult = await window.ClashlyAuth.exchangeCodeForSession(code);
+    clearOAuthParamsFromUrl();
+    if (exchangeResult.error) {
+      clearOAuthIntent();
+      throw exchangeResult.error;
+    }
+
+    const sessionResult = await window.ClashlyAuth.getSession();
+    if (sessionResult.error) {
+      throw sessionResult.error;
+    }
+
+    const userId = sessionResult.session && sessionResult.session.user ? sessionResult.session.user.id : "";
+    if (!userId) {
+      clearOAuthIntent();
+      throw new Error("Google sign-in succeeded but no user session was found.");
+    }
+
+    const oauthIntent = getOAuthIntent();
+    clearOAuthIntent();
+    if (oauthIntent === "signup") {
+      window.location.replace("profile-setup.html");
+      return true;
+    }
+
+    await redirectAfterAuth(userId);
+    return true;
   }
 
   async function handleVerifyOtp(code) {
@@ -801,13 +899,15 @@
     });
   }
 
-  function bootAuthPage() {
+  async function bootAuthPage() {
     try {
       if (!window.ClashlyAuth || !window.ClashlyProfiles) return;
 
       animatePage();
       initAuthSwitch();
       setMode("login");
+      const redirectedByOauth = await handleGoogleCallback();
+      if (redirectedByOauth) return;
       initGoogleAuth();
       initAuthForm();
       initForgotPassword();
@@ -815,6 +915,8 @@
       bindOtpModalClose();
       bindForgotModalClose();
       initPasswordToggles();
+    } catch (error) {
+      setStatus(mapAuthError(error), "error");
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
@@ -822,5 +924,12 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", bootAuthPage);
+  document.addEventListener("DOMContentLoaded", () => {
+    bootAuthPage().catch((error) => {
+      setStatus(mapAuthError(error), "error");
+      if (window.ClasheLoader) {
+        window.ClasheLoader.release("page-data");
+      }
+    });
+  });
 })();
