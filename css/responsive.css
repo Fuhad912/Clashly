@@ -135,8 +135,7 @@
   }
 
   .take-action--vote .take-action__label {
-    font-size: 0.58rem;
-    letter-spacing: 0.03em;
+    display: none;
   }
 
   .take-vote-split {
