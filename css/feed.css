@@ -530,7 +530,12 @@
 }
 
 .take-action--vote .take-action__stack {
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.take-action--vote .take-action__lead {
+  gap: 4px;
 }
 
 .take-action--vote .take-action__count {
@@ -542,6 +547,7 @@
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.05em;
+  line-height: 1;
   text-transform: uppercase;
   opacity: 0.78;
 }
