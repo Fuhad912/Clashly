@@ -119,10 +119,24 @@
   }
 
   .take-action--vote {
-    min-width: 96px;
-    height: 40px;
-    min-height: 40px;
-    padding: 0 10px;
+    min-width: 84px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .take-action--vote .take-action__stack {
+    gap: 6px;
+  }
+
+  .take-action--vote .take-action__count {
+    font-size: 0.76rem;
+  }
+
+  .take-action--vote .take-action__label {
+    font-size: 0.58rem;
+    letter-spacing: 0.03em;
   }
 
   .take-vote-split {
@@ -371,10 +385,10 @@
 
   /* Narrower vote button so it fits on 320px without overflowing */
   .take-action--vote {
-    min-width: 80px;
+    min-width: 72px;
     min-height: 36px;
     height: 36px;
-    padding: 0 8px;
+    padding: 0 6px;
     font-size: 0.72rem;
   }
 
@@ -416,8 +430,8 @@
 
   /* Vote buttons fit comfortably at this range */
   .take-action--vote {
-    min-width: 92px;
-    padding: 0 10px;
+    min-width: 82px;
+    padding: 0 8px;
   }
 
   /* Comfortable profile stat sizing */
