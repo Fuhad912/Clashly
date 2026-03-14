@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clashe | Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="js/theme.js"></script>
+    <script src="js/loader.js"></script>
+    <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/loader.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/create.css" />
+    <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/search.css" />
+    <link rel="stylesheet" href="css/comments-modal.css" />
+    <link rel="stylesheet" href="css/share-modal.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body data-page="search" data-requires-auth="true" data-requires-profile="true">
+    <header id="top-nav" class="top-nav"></header>
+
+    <main class="app-main app-main--search">
+      <section class="search-shell">
+        <header class="feed-head search-shell__head">
+          <a href="index.html" class="search-back-link text-link" aria-label="Back to home page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+            <span>Back</span>
+          </a>
+          <div class="search-shell__title">
+            <p class="section-kicker">Discovery</p>
+            <h1 id="search-title" class="page-title">Results</h1>
+            <p id="search-subtitle" class="section-subtitle">Search takes, users, and hashtags.</p>
+          </div>
+          <form id="search-page-form" class="page-search page-search--results" role="search" novalidate>
+            <label class="page-search__field" for="search-page-input">
+              <span class="page-search__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6"></circle>
+                  <path d="m20 20-4.2-4.2"></path>
+                </svg>
+              </span>
+              <input
+                id="search-page-input"
+                class="page-search__input"
+                type="search"
+                name="q"
+                placeholder="Search takes, users, hashtags"
+                autocomplete="off"
+              />
+            </label>
+          </form>
+        </header>
+
+        <section id="search-discovery" class="search-discovery">
+          <section class="search-panels" aria-label="Discovery prompts">
+            <article class="search-panel">
+              <header class="search-panel__head">
+                <p class="search-panel__eyebrow">Hot lanes</p>
+                <h3 class="search-panel__title">Jump into active themes</h3>
+              </header>
+              <p id="search-trending-state" class="search-discovery__state">Loading live lanes...</p>
+              <div id="search-trending-topics" class="search-topic-grid" hidden></div>
+            </article>
+          </section>
+        </section>
+
+        <p id="search-state" class="feed-state">Searching...</p>
+        <p id="search-empty" class="feed-empty" hidden>No results found.</p>
+
+        <section id="search-takes-group" class="search-group" hidden>
+          <header class="search-group__head">
+            <h2>Takes</h2>
+          </header>
+          <div id="search-takes-stream" class="feed-stream"></div>
+        </section>
+
+        <section id="search-users-group" class="search-group" hidden>
+          <header class="search-group__head">
+            <h2>Users</h2>
+          </header>
+          <div id="search-users-body" class="search-list"></div>
+        </section>
+
+        <section id="search-hashtags-group" class="search-group" hidden>
+          <header class="search-group__head">
+            <h2>Hashtags</h2>
+          </header>
+          <div id="search-hashtags-body" class="search-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="js/ux-animations.js"></script>
+    <script src="js/env.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-service.js"></script>
+    <script src="js/profile-service.js"></script>
+    <script src="js/notifications-service.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/personalization-service.js"></script>
+    <script src="js/categories-service.js"></script>
+    <script src="js/takes-service.js"></script>
+    <script src="js/search-service.js"></script>
+    <script src="js/search-suggestions.js"></script>
+    <script src="js/take-renderer.js"></script>
+    <script src="js/comments-service.js"></script>
+    <script src="js/comments-renderer.js"></script>
+    <script src="js/comments-modal.js"></script>
+    <script src="js/share-modal.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/search.js"></script>
+  </body>
+</html>
