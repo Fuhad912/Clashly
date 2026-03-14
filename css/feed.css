@@ -439,16 +439,16 @@
 /* ── Vote buttons — use semantic color tokens ─────────────── */
 
 .take-action--vote {
-  min-width: 104px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text);
+  min-width: 78px;
+  padding: 0 8px;
+  border-radius: var(--radius-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
   height: 40px;
   min-height: 40px;
-  box-shadow: var(--shadow-soft);
-  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast), color var(--transition-fast);
+  box-shadow: none;
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
 .take-action:not(.take-action--vote) {
@@ -552,25 +552,26 @@
   background: var(--color-hover);
 }
 
+.take-action--agree,
+.take-action--disagree {
+  min-width: 76px;
+  padding: 0 7px;
+}
+
 .take-action--agree:hover {
   color: var(--color-agree);
-  background: var(--color-agree-bg);
-  border-color: var(--color-agree-border);
-  transform: translateY(-1px);
+  background: transparent;
 }
 
 .take-action--disagree:hover {
   color: var(--color-disagree);
-  background: var(--color-disagree-bg);
-  border-color: var(--color-disagree-border);
-  transform: translateY(-1px);
+  background: transparent;
 }
 
 /* Selected states */
 .take-action--agree.is-selected {
   color: var(--color-agree);
-  background: var(--color-agree-bg);
-  border-color: var(--color-agree-border);
+  background: transparent;
 }
 
 .take-action--agree.is-selected .take-action__lead,
@@ -580,8 +581,7 @@
 
 .take-action--disagree.is-selected {
   color: var(--color-disagree);
-  background: var(--color-disagree-bg);
-  border-color: var(--color-disagree-border);
+  background: transparent;
 }
 
 .take-action--disagree.is-selected .take-action__lead,
