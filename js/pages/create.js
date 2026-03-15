@@ -47,19 +47,59 @@
   }
 
   function resetPreview(preview) {
+    const objectUrls = (() => {
+      try {
+        return JSON.parse(preview.dataset.objectUrls || "[]");
+      } catch {
+        return [];
+      }
+    })();
+    objectUrls.forEach((url) => {
+      if (url) URL.revokeObjectURL(url);
+    });
+    delete preview.dataset.objectUrls;
     preview.classList.remove("has-image");
+    preview.classList.remove("has-multiple");
     preview.textContent = DEFAULT_PREVIEW_TEXT;
+  }
+
+  function getImageFiles(input) {
+    return Array.from((input && input.files) || []).filter(Boolean);
+  }
+
+  function renderPreview(preview, files) {
+    resetPreview(preview);
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (!safeFiles.length) return;
+
+    const objectUrls = safeFiles.map((file) => URL.createObjectURL(file));
+    preview.dataset.objectUrls = JSON.stringify(objectUrls);
+    preview.classList.add("has-image");
+    preview.classList.toggle("has-multiple", objectUrls.length > 1);
+
+    if (objectUrls.length === 1) {
+      preview.innerHTML = `<img src="${objectUrls[0]}" alt="Selected upload preview" />`;
+      return;
+    }
+
+    preview.innerHTML = `
+      <div class="image-preview-grid">
+        ${objectUrls
+          .map((url, index) => `<img src="${url}" alt="Selected upload preview ${index + 1}" />`)
+          .join("")}
+      </div>
+    `;
   }
 
   function setupImagePreview(input, preview) {
     input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
-      if (!file) {
+      const files = getImageFiles(input);
+      if (!files.length) {
         resetPreview(preview);
         return;
       }
 
-      const imageValidation = window.ClashlyTakes.validateImageFile(file);
+      const imageValidation = window.ClashlyTakes.validateImageFiles(files);
       if (!imageValidation.valid) {
         input.value = "";
         resetPreview(preview);
@@ -67,9 +107,8 @@
         return;
       }
 
-      const objectUrl = URL.createObjectURL(file);
-      preview.classList.add("has-image");
-      preview.innerHTML = `<img src="${objectUrl}" alt="Selected upload preview" />`;
+      const maxImages = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
+      renderPreview(preview, files.slice(0, maxImages));
       setStatus("", "");
     });
   }
@@ -114,8 +153,8 @@
         return;
       }
 
-      const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
-      const imageValidation = window.ClashlyTakes.validateImageFile(imageFile);
+      const imageFiles = getImageFiles(imageInput);
+      const imageValidation = window.ClashlyTakes.validateImageFiles(imageFiles);
       if (!imageValidation.valid) {
         setStatus(imageValidation.error, "error");
         return;
@@ -135,7 +174,7 @@
           userId: sessionState.user.id,
           content,
           categorySlug: categorySelect.value,
-          imageFile,
+          imageFiles,
         });
 
         if (createResult.error) {
