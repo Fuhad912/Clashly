@@ -31,6 +31,24 @@
     return String(query || "").trim();
   }
 
+  function parseTakeImageUrls(rawValue) {
+    const raw = String(rawValue || "").trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+        }
+      } catch {
+        // Fall through to single URL parsing.
+      }
+    }
+
+    return [raw];
+  }
+
   function normalizeHashtagQuery(query) {
     return normalizeQuery(query)
       .replace(/^#/, "")
@@ -162,10 +180,15 @@
 
     const profileMap = new Map((profilesResult.profiles || []).map((profile) => [profile.id, profile]));
     return {
-      takes: rows.map((row) => ({
-        ...row,
-        profile: profileMap.get(row.user_id) || null,
-      })),
+      takes: rows.map((row) => {
+        const imageUrls = parseTakeImageUrls(row.image_url);
+        return {
+          ...row,
+          image_url: imageUrls[0] || "",
+          image_urls: imageUrls,
+          profile: profileMap.get(row.user_id) || null,
+        };
+      }),
       error: null,
     };
   }
