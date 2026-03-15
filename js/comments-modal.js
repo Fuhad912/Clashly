@@ -187,18 +187,44 @@
     });
   }
 
+  function getTakeImageUrls(take) {
+    if (!take || typeof take !== "object") return [];
+
+    if (Array.isArray(take.image_urls)) {
+      return take.image_urls.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+    }
+
+    const raw = String(take.image_url || "").trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+        }
+      } catch {
+        // Fall through to single URL.
+      }
+    }
+
+    return [raw];
+  }
+
   function renderTake() {
     const streamEl = getEl("comments-drawer-take");
     const stageEl = getEl("comments-drawer-stage");
     const mediaEl = getEl("comments-drawer-media");
     if (!streamEl || !window.ClashlyTakeRenderer) return;
-    const showMedia = isDesktopLayout() && Boolean(currentTake && currentTake.image_url);
+    const mediaUrls = getTakeImageUrls(currentTake);
+    const showMedia = isDesktopLayout() && mediaUrls.length > 0;
 
     const takeForPreview =
-      currentTake && currentTake.image_url
+      currentTake && mediaUrls.length
         ? {
             ...currentTake,
             image_url: "",
+            image_urls: [],
           }
         : currentTake;
 
@@ -216,13 +242,27 @@
       if (showMedia) {
         const username = currentTake.profile && currentTake.profile.username ? `@${currentTake.profile.username}` : "@clashly";
         mediaEl.hidden = false;
-        mediaEl.innerHTML = `
-          <div class="comments-drawer__media-frame">
-            <img src="${window.ClashlyUtils.escapeHtml(currentTake.image_url)}" alt="${window.ClashlyUtils.escapeHtml(
-              username
-            )} take image" />
-          </div>
-        `;
+        mediaEl.innerHTML =
+          mediaUrls.length === 1
+            ? `
+              <div class="comments-drawer__media-frame">
+                <img src="${window.ClashlyUtils.escapeHtml(mediaUrls[0])}" alt="${window.ClashlyUtils.escapeHtml(
+                  username
+                )} take image" />
+              </div>
+            `
+            : `
+              <div class="comments-drawer__media-frame comments-drawer__media-frame--double">
+                ${mediaUrls
+                  .map(
+                    (url, index) =>
+                      `<img src="${window.ClashlyUtils.escapeHtml(url)}" alt="${window.ClashlyUtils.escapeHtml(
+                        username
+                      )} take image ${index + 1}" />`
+                  )
+                  .join("")}
+              </div>
+            `;
       } else {
         mediaEl.hidden = true;
         mediaEl.innerHTML = "";
