@@ -408,7 +408,7 @@
               </div>
 
               <div class="composer-media">
-                <p class="field-label">Optional image</p>
+                <p class="field-label">Optional images</p>
                 <label for="create-modal-image" class="composer-upload">
                   <span class="composer-upload__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -418,7 +418,7 @@
                     </svg>
                   </span>
                   <span class="composer-upload__copy">
-                    <strong>Add image</strong>
+                    <strong>Add images</strong>
                   </span>
                 </label>
                 <input
@@ -426,8 +426,9 @@
                   class="composer-upload__input"
                   type="file"
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  multiple
                 />
-                <p class="composer-hint">One image max.</p>
+                <p class="composer-hint">Up to 2 images max.</p>
                 <div class="image-preview-placeholder" id="create-modal-preview">${DEFAULT_PREVIEW_TEXT}</div>
               </div>
 
@@ -454,7 +455,7 @@
                 <ul class="composer-detail__list">
                   <li><strong>180 characters max</strong><span>Shorter usually reads harder and travels better in the feed.</span></li>
                   <li><strong>Up to 3 hashtags</strong><span>Use tags only when they sharpen discovery, not as filler.</span></li>
-                  <li><strong>One image max</strong><span>Use visuals only when they strengthen the opinion.</span></li>
+                  <li><strong>2 images max</strong><span>Use visuals only when they strengthen the opinion.</span></li>
                   <li><strong>Posts go live fast</strong><span>Once posted, your take is available for voting and replies immediately.</span></li>
                 </ul>
               </section>
@@ -716,14 +717,53 @@
   function resetCreatePreview() {
     const { preview } = getCreateModalElements();
     if (!preview) return;
-    const objectUrl = preview.dataset.objectUrl || "";
-    if (objectUrl) {
-      URL.revokeObjectURL(objectUrl);
-      delete preview.dataset.objectUrl;
-    }
+    const objectUrls = (() => {
+      try {
+        return JSON.parse(preview.dataset.objectUrls || "[]");
+      } catch {
+        return [];
+      }
+    })();
+    objectUrls.forEach((url) => {
+      if (url) URL.revokeObjectURL(url);
+    });
+    delete preview.dataset.objectUrls;
 
     preview.classList.remove("has-image");
+    preview.classList.remove("has-multiple");
     preview.textContent = DEFAULT_PREVIEW_TEXT;
+  }
+
+  function getCreateImageFiles() {
+    const { imageInput } = getCreateModalElements();
+    return Array.from((imageInput && imageInput.files) || []).filter(Boolean);
+  }
+
+  function renderCreatePreview(files) {
+    const { preview } = getCreateModalElements();
+    if (!preview) return;
+
+    resetCreatePreview();
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (!safeFiles.length) return;
+
+    const objectUrls = safeFiles.map((file) => URL.createObjectURL(file));
+    preview.dataset.objectUrls = JSON.stringify(objectUrls);
+    preview.classList.add("has-image");
+    preview.classList.toggle("has-multiple", objectUrls.length > 1);
+
+    if (objectUrls.length === 1) {
+      preview.innerHTML = `<img src="${objectUrls[0]}" alt="Selected upload preview" />`;
+      return;
+    }
+
+    preview.innerHTML = `
+      <div class="image-preview-grid">
+        ${objectUrls
+          .map((url, index) => `<img src="${url}" alt="Selected upload preview ${index + 1}" />`)
+          .join("")}
+      </div>
+    `;
   }
 
   function resetCreateForm() {
@@ -799,13 +839,13 @@
     });
 
     elements.imageInput.addEventListener("change", () => {
-      const file = elements.imageInput.files && elements.imageInput.files[0];
-      if (!file) {
+      const files = getCreateImageFiles();
+      if (!files.length) {
         resetCreatePreview();
         return;
       }
 
-      const validation = window.ClashlyTakes.validateImageFile(file);
+      const validation = window.ClashlyTakes.validateImageFiles(files);
       if (!validation.valid) {
         elements.imageInput.value = "";
         resetCreatePreview();
@@ -813,11 +853,8 @@
         return;
       }
 
-      resetCreatePreview();
-      const objectUrl = URL.createObjectURL(file);
-      elements.preview.dataset.objectUrl = objectUrl;
-      elements.preview.classList.add("has-image");
-      elements.preview.innerHTML = `<img src="${objectUrl}" alt="Selected upload preview" />`;
+      const maxImages = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
+      renderCreatePreview(files.slice(0, maxImages));
       setCreateStatus("", "");
     });
 
@@ -838,8 +875,8 @@
         return;
       }
 
-      const imageFile = elements.imageInput.files && elements.imageInput.files[0] ? elements.imageInput.files[0] : null;
-      const imageValidation = window.ClashlyTakes.validateImageFile(imageFile);
+      const imageFiles = getCreateImageFiles();
+      const imageValidation = window.ClashlyTakes.validateImageFiles(imageFiles);
       if (!imageValidation.valid) {
         setCreateStatus(imageValidation.error, "error");
         return;
@@ -859,7 +896,7 @@
           userId: sessionState.user.id,
           content,
           categorySlug: elements.categorySelect.value,
-          imageFile,
+          imageFiles,
         });
 
         if (createResult.error) {
