@@ -134,6 +134,16 @@
   object-fit: cover;
 }
 
+.share-preview__media--double {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.share-preview__media--double img {
+  height: 180px;
+}
+
 .share-actions {
   display: flex;
   flex-wrap: wrap;
