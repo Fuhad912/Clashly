@@ -1699,11 +1699,27 @@
       .from(TAKES_TABLE)
       .delete()
       .eq("id", input.takeId)
-      .eq("user_id", input.userId);
+      .eq("user_id", input.userId)
+      .select("id");
+
+    if (deleteResult.error) {
+      return {
+        deleted: false,
+        error: deleteResult.error,
+      };
+    }
+
+    const deletedRows = Array.isArray(deleteResult.data) ? deleteResult.data : [];
+    if (!deletedRows.length) {
+      return {
+        deleted: false,
+        error: new Error("Could not delete take."),
+      };
+    }
 
     return {
-      deleted: !deleteResult.error,
-      error: deleteResult.error,
+      deleted: true,
+      error: null,
     };
   }
 
