@@ -1081,6 +1081,7 @@
       });
 
       if (result.error) throw result.error;
+      if (!result.deleted) throw new Error("Could not delete take.");
 
       removeTakeFromState(input.takeId);
       renderProfile(currentProfile, currentUser.email || "");
