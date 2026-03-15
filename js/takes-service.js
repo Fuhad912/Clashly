@@ -10,6 +10,7 @@
   const TAKE_IMAGES_BUCKET = "take-images";
   const MAX_CONTENT_LENGTH = 180;
   const MAX_HASHTAGS_PER_TAKE = 3;
+  const MAX_IMAGES_PER_TAKE = 2;
   const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -136,6 +137,80 @@
     return { valid: true, error: "" };
   }
 
+  function normalizeImageFilesInput(input) {
+    if (Array.isArray(input && input.imageFiles)) {
+      return input.imageFiles.filter(Boolean);
+    }
+    if (input && input.imageFile) {
+      return [input.imageFile];
+    }
+    return [];
+  }
+
+  function validateImageFiles(files) {
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (safeFiles.length > MAX_IMAGES_PER_TAKE) {
+      return {
+        valid: false,
+        error: `You can upload up to ${MAX_IMAGES_PER_TAKE} images per take.`,
+      };
+    }
+
+    for (let index = 0; index < safeFiles.length; index += 1) {
+      const result = validateImageFile(safeFiles[index]);
+      if (!result.valid) return result;
+    }
+
+    return { valid: true, error: "" };
+  }
+
+  function parseTakeImageUrls(rawValue) {
+    const raw = String(rawValue || "").trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+            .slice(0, MAX_IMAGES_PER_TAKE);
+        }
+      } catch {
+        // Fall through to single URL parsing.
+      }
+    }
+
+    return [raw];
+  }
+
+  function serializeTakeImageUrls(urls) {
+    const safeUrls = (Array.isArray(urls) ? urls : [])
+      .map((url) => String(url || "").trim())
+      .filter(Boolean)
+      .slice(0, MAX_IMAGES_PER_TAKE);
+
+    if (!safeUrls.length) return "";
+    if (safeUrls.length === 1) return safeUrls[0];
+    return JSON.stringify(safeUrls);
+  }
+
+  function withTakeImageFields(take) {
+    if (!take || typeof take !== "object") return take;
+    const imageUrls = Array.isArray(take.image_urls)
+      ? take.image_urls
+          .map((url) => String(url || "").trim())
+          .filter(Boolean)
+          .slice(0, MAX_IMAGES_PER_TAKE)
+      : parseTakeImageUrls(take.image_url);
+    return {
+      ...take,
+      image_url: imageUrls[0] || "",
+      image_urls: imageUrls,
+    };
+  }
+
   function normalizeVoteType(voteType) {
     const safe = String(voteType || "").toLowerCase();
     if (safe === "agree" || safe === "disagree") return safe;
@@ -179,6 +254,26 @@
     };
   }
 
+  async function uploadTakeImages(files, userId) {
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (!safeFiles.length) {
+      return { imageUrls: [], error: null };
+    }
+
+    const imageUrls = [];
+    for (let index = 0; index < safeFiles.length; index += 1) {
+      const uploadResult = await uploadTakeImage(safeFiles[index], userId);
+      if (uploadResult.error) {
+        return { imageUrls: [], error: uploadResult.error };
+      }
+      if (uploadResult.imageUrl) {
+        imageUrls.push(uploadResult.imageUrl);
+      }
+    }
+
+    return { imageUrls, error: null };
+  }
+
   async function createTake(input) {
     const client = getClientOrThrow();
     const cleanContent = sanitizeContent(input.content);
@@ -192,26 +287,24 @@
       return { take: null, error: new Error(categoryError) };
     }
 
-    const imageValidation = validateImageFile(input.imageFile);
+    const imageFiles = normalizeImageFilesInput(input);
+    const imageValidation = validateImageFiles(imageFiles);
     if (!imageValidation.valid) {
       return { take: null, error: new Error(imageValidation.error) };
     }
 
-    let imageUrl = "";
-    if (input.imageFile) {
-      const uploadResult = await uploadTakeImage(input.imageFile, input.userId);
-      if (uploadResult.error) {
-        return { take: null, error: uploadResult.error };
-      }
-      imageUrl = uploadResult.imageUrl;
+    const uploadResult = await uploadTakeImages(imageFiles, input.userId);
+    if (uploadResult.error) {
+      return { take: null, error: uploadResult.error };
     }
+    const serializedImageUrls = serializeTakeImageUrls(uploadResult.imageUrls || []);
 
     const insertResult = await client
       .from(TAKES_TABLE)
       .insert({
         user_id: input.userId,
         content: cleanContent,
-        image_url: imageUrl || null,
+        image_url: serializedImageUrls || null,
       })
       .select("id, user_id, content, image_url, created_at")
       .single();
@@ -241,7 +334,7 @@
 
     return {
       take: {
-        ...(insertResult.data || {}),
+        ...withTakeImageFields(insertResult.data || {}),
         hashtags: hashtagResult.hashtags || [],
         category: categoryResult.category || null,
       },
@@ -627,7 +720,7 @@
             }
           : null;
 
-      return {
+      return withTakeImageFields({
         id: row.id,
         user_id: row.user_id,
         content: row.content || "",
@@ -643,7 +736,7 @@
         bookmarked: Boolean(row.bookmarked),
         hashtags,
         category,
-      };
+      });
     });
   }
 
@@ -700,7 +793,8 @@
     const recencyScore = Math.max(0, 72 - ageHours) * 1.25;
     const engagementScore = totalVotes * 4.5;
     const qualityBoost = Math.min(18, take.content.length / 10);
-    const imageBoost = take.image_url ? 4 : 0;
+    const imageUrls = Array.isArray(take.image_urls) ? take.image_urls : parseTakeImageUrls(take.image_url);
+    const imageBoost = imageUrls.length ? 4 : 0;
     return recencyScore + engagementScore + qualityBoost + imageBoost;
   }
 
@@ -799,8 +893,9 @@
     const rowsWithHashtags = attachHashtagsToTakes(rowsWithBookmarks, hashtagsResult.hashtagMap);
     const rowsWithCategories = attachCategoryToTakes(rowsWithHashtags, categoriesResult.categoryMap);
 
+    const merged = mergeTakesWithProfiles(rowsWithCategories, profileResult.profiles || []);
     return {
-      takes: mergeTakesWithProfiles(rowsWithCategories, profileResult.profiles || []),
+      takes: merged.map((take) => withTakeImageFields(take)),
       error: null,
     };
   }
@@ -1622,6 +1717,7 @@
     TAKE_CATEGORIES_TABLE,
     MAX_CONTENT_LENGTH,
     MAX_HASHTAGS_PER_TAKE,
+    MAX_IMAGES_PER_TAKE,
     MAX_IMAGE_SIZE_BYTES,
     MIN_CONTROVERSIAL_VOTES,
     extractHashtags,
@@ -1629,6 +1725,8 @@
     validateHashtags,
     validateCategory,
     validateImageFile,
+    validateImageFiles,
+    parseTakeImageUrls,
     validateVoteType,
     createTake,
     fetchFeedTakes,
