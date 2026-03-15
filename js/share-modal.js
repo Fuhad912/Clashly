@@ -146,6 +146,30 @@
     if (type === "success") statusEl.classList.add("is-success");
   }
 
+  function getTakeImageUrls(take) {
+    if (!take || typeof take !== "object") return [];
+
+    if (Array.isArray(take.image_urls)) {
+      return take.image_urls.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+    }
+
+    const raw = String(take.image_url || "").trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+        }
+      } catch {
+        // Fall through to single URL.
+      }
+    }
+
+    return [raw];
+  }
+
   function renderPreview(take) {
     const preview = document.getElementById("share-preview");
     if (!preview) return;
@@ -156,9 +180,15 @@
 
     const username = getUsername(take.profile);
     const time = window.ClashlyUtils.formatRelativeTime(take.created_at);
-    const media = take.image_url
-      ? `<div class="share-preview__media"><img src="${window.ClashlyUtils.escapeHtml(take.image_url)}" alt="" /></div>`
-      : "";
+    const mediaUrls = getTakeImageUrls(take);
+    const media =
+      mediaUrls.length === 1
+        ? `<div class="share-preview__media"><img src="${window.ClashlyUtils.escapeHtml(mediaUrls[0])}" alt="" /></div>`
+        : mediaUrls.length > 1
+          ? `<div class="share-preview__media share-preview__media--double">${mediaUrls
+              .map((url) => `<img src="${window.ClashlyUtils.escapeHtml(url)}" alt="" />`)
+              .join("")}</div>`
+          : "";
 
     preview.innerHTML = `
       <article class="share-preview__card">
