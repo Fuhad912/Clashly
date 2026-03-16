@@ -2,6 +2,7 @@
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   let currentUserEmail = "";
   let deleteInFlight = false;
+  let unsubscribePwaState = null;
 
   function normalizeEmail(email) {
     return String(email || "").trim().toLowerCase();
@@ -27,6 +28,107 @@
     statusEl.classList.remove("is-error", "is-success");
     if (type === "error") statusEl.classList.add("is-error");
     if (type === "success") statusEl.classList.add("is-success");
+  }
+
+  function setInstallStatus(message, type) {
+    const statusEl = document.getElementById("settings-install-status");
+    if (!statusEl) return;
+
+    statusEl.hidden = !message;
+    statusEl.textContent = message || "";
+    statusEl.classList.remove("is-error", "is-success");
+    if (type === "error") statusEl.classList.add("is-error");
+    if (type === "success") statusEl.classList.add("is-success");
+  }
+
+  function getInstallElements() {
+    return {
+      card: document.getElementById("settings-install-card"),
+      copy: document.getElementById("settings-install-copy"),
+      trigger: document.getElementById("settings-install-trigger"),
+      status: document.getElementById("settings-install-status"),
+    };
+  }
+
+  function renderInstallState(state) {
+    const { card, copy, trigger } = getInstallElements();
+    if (!card || !copy || !trigger) return;
+
+    const safeState = state || {};
+    const isInstalled = Boolean(safeState.installed);
+    const canInstall = Boolean(safeState.canInstall);
+    const promptOutcome = String(safeState.promptOutcome || "");
+
+    if (isInstalled) {
+      card.hidden = false;
+      copy.textContent = "Clashe is already installed on this device.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("Installed.", "success");
+      return;
+    }
+
+    if (canInstall) {
+      card.hidden = false;
+      copy.textContent = "Install Clashe for faster access and an app-like experience.";
+      trigger.hidden = false;
+      trigger.disabled = false;
+      trigger.textContent = "Install Clashe";
+      setInstallStatus("", "");
+      return;
+    }
+
+    if (promptOutcome === "accepted") {
+      card.hidden = false;
+      copy.textContent = "Install accepted. Finishing setup on this device.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("Waiting for install confirmation...", "success");
+      return;
+    }
+
+    if (promptOutcome === "dismissed") {
+      card.hidden = false;
+      copy.textContent = "Install prompt dismissed for now. It will show again when the browser offers it again.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("", "");
+      return;
+    }
+
+    card.hidden = true;
+    trigger.hidden = false;
+    trigger.disabled = false;
+    trigger.textContent = "Install Clashe";
+    setInstallStatus("", "");
+  }
+
+  async function handleInstallClick() {
+    if (!window.ClashlyPWA) return;
+
+    const { trigger } = getInstallElements();
+    if (!(trigger instanceof HTMLButtonElement)) return;
+
+    trigger.disabled = true;
+    trigger.textContent = "Opening...";
+    setInstallStatus("", "");
+
+    try {
+      const result = await window.ClashlyPWA.promptInstall();
+
+      if (result && result.outcome === "accepted") {
+        setInstallStatus("Install accepted. Finishing setup...", "success");
+      } else if (result && result.outcome === "dismissed") {
+        setInstallStatus("Install dismissed for now.", "");
+      } else if (result && result.status === "unavailable") {
+        setInstallStatus("Install is not available on this device right now.", "error");
+      }
+    } catch (error) {
+      setInstallStatus("Could not open the install prompt.", "error");
+      window.ClashlyUtils.reportError("PWA install prompt failed.", error, "Could not open install prompt.");
+    } finally {
+      renderInstallState(window.ClashlyPWA.getState());
+    }
   }
 
   function getDeleteModalElements() {
@@ -180,6 +282,20 @@
         emailForm.addEventListener("submit", handleEmailChangeSubmit);
       }
 
+      const { trigger } = getInstallElements();
+      if (trigger && window.ClashlyPWA) {
+        trigger.addEventListener("click", () => {
+          handleInstallClick().catch(() => {});
+        });
+        unsubscribePwaState = window.ClashlyPWA.subscribe(renderInstallState);
+      } else {
+        renderInstallState({
+          installed: false,
+          canInstall: false,
+          promptOutcome: "",
+        });
+      }
+
       const deleteBtn = document.getElementById("settings-delete-account");
       if (deleteBtn) {
         deleteBtn.addEventListener("click", () => {
@@ -211,6 +327,15 @@
         });
       }
     } finally {
+      if (unsubscribePwaState) {
+        window.addEventListener(
+          "beforeunload",
+          () => {
+            unsubscribePwaState();
+          },
+          { once: true }
+        );
+      }
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
       }
