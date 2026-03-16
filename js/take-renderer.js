@@ -228,7 +228,7 @@
         >
           <span class="take-action__lead">
             <span class="take-action__icon take-action__icon--judge">${renderActionIcon("judge")}</span>
-            <span>AI Judge</span>
+            <span>Judge</span>
           </span>
         </button>`
       : "";
@@ -245,6 +245,19 @@
           <span class="take-action__icon">${renderActionIcon("delete")}</span>
         </button>`
       : "";
+    const saveAction = `
+      <button
+        type="button"
+        class="take-action take-action--bookmark take-item__save-action${bookmarkSelected}"
+        data-action="bookmark"
+        data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+        data-bookmarked="${take && take.bookmarked ? "true" : "false"}"
+        aria-label="${bookmarkLabel} take"
+        title="${bookmarkLabel} take"
+      >
+        <span class="take-action__icon">${renderActionIcon("bookmark")}</span>
+      </button>
+    `;
 
     return `
       <footer class="take-item__actions-wrapper" aria-label="Take actions">
@@ -281,21 +294,13 @@
               </span>
             </button>
             ${commentsAction}
-            ${judgeAction}
             ${shareAction}
             ${deleteAction}
           </div>
-          <button
-            type="button"
-            class="take-action take-action--bookmark take-item__save-action${bookmarkSelected}"
-            data-action="bookmark"
-            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-            data-bookmarked="${take && take.bookmarked ? "true" : "false"}"
-            aria-label="${bookmarkLabel} take"
-            title="${bookmarkLabel} take"
-          >
-            <span class="take-action__icon">${renderActionIcon("bookmark")}</span>
-          </button>
+          <div class="take-item__actions-side" aria-label="Secondary take actions">
+            ${judgeAction}
+            ${saveAction}
+          </div>
         </div>
         ${renderVoteSplit(voteData)}
         ${renderVoteMeta(voteData)}
