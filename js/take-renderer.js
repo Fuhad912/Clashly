@@ -34,6 +34,34 @@
     return `<div class="take-item__avatar">${window.ClashlyUtils.escapeHtml(initials)}</div>`;
   }
 
+  function getTakeImageUrls(take) {
+    if (!take || typeof take !== "object") return [];
+
+    if (Array.isArray(take.image_urls)) {
+      return take.image_urls.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+    }
+
+    if (window.ClashlyTakes && typeof window.ClashlyTakes.parseTakeImageUrls === "function") {
+      return window.ClashlyTakes.parseTakeImageUrls(take.image_url || "").slice(0, 2);
+    }
+
+    const raw = String(take.image_url || "").trim();
+    if (!raw) return [];
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 2);
+        }
+      } catch {
+        // Fall through to single URL.
+      }
+    }
+
+    return [raw];
+  }
+
   function getOwnerBadge(take, currentUserId) {
     if (!currentUserId || !take || take.user_id !== currentUserId) return "";
     return `<span class="take-owner-badge" title="Owner tools coming soon">Owner</span>`;
@@ -311,17 +339,31 @@
     const takeHref = take && take.id ? `take.html?id=${encodeURIComponent(take.id)}` : "take.html";
     const relativeTime = window.ClashlyUtils.formatRelativeTime(take.created_at);
     const avatarMarkup = getAvatarMarkup(take.profile);
-    const hasImage = Boolean(take.image_url);
+    const imageUrls = getTakeImageUrls(take);
+    const hasImage = imageUrls.length > 0;
     const ownerBadge = getOwnerBadge(take, options.currentUserId);
     const openLink = options.showOpenLink ? `<a href="${takeHref}" class="take-item__open">Open</a>` : "";
     const mediaMarkup = hasImage
-      ? `
-        <div class="take-item__media">
-          <img src="${window.ClashlyUtils.escapeHtml(take.image_url)}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
-            username
-          )}" loading="lazy" />
-        </div>
-      `
+      ? imageUrls.length === 1
+        ? `
+          <div class="take-item__media">
+            <img src="${window.ClashlyUtils.escapeHtml(imageUrls[0])}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
+              username
+            )}" loading="lazy" />
+          </div>
+        `
+        : `
+          <div class="take-item__media take-item__media--double">
+            ${imageUrls
+              .map(
+                (url, index) =>
+                  `<img src="${window.ClashlyUtils.escapeHtml(url)}" alt="Take image ${index + 1} from ${window.ClashlyUtils.escapeHtml(
+                    username
+                  )}" loading="lazy" />`
+              )
+              .join("")}
+          </div>
+        `
       : "";
 
     return `
@@ -350,7 +392,8 @@
     const relativeTime = window.ClashlyUtils.formatRelativeTime(take.created_at);
     const voteData = getVoteData(take);
     const excerpt = renderTakeText(take.content);
-    const hasImage = Boolean(take.image_url);
+    const imageUrls = getTakeImageUrls(take);
+    const hasImage = imageUrls.length > 0;
     const currentUserId = options && options.currentUserId ? String(options.currentUserId) : "";
     const canDeleteTake = Boolean(options && options.showDeleteAction && currentUserId && take && take.user_id === currentUserId);
     const userVoteLabel =
@@ -359,12 +402,27 @@
         : voteData.userVote === "disagree"
           ? `<span class="profile-grid-vote profile-grid-vote--disagree">You disagreed</span>`
           : "";
+    const mediaVisualMarkup =
+      imageUrls.length > 1
+        ? `
+          <div class="profile-grid-take__media-grid">
+            ${imageUrls
+              .map(
+                (url, index) =>
+                  `<img class="profile-grid-take__media" src="${window.ClashlyUtils.escapeHtml(url)}" alt="Take image ${index + 1} from ${window.ClashlyUtils.escapeHtml(
+                    username
+                  )}" loading="lazy" />`
+              )
+              .join("")}
+          </div>
+        `
+        : `<img class="profile-grid-take__media" src="${window.ClashlyUtils.escapeHtml(imageUrls[0])}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
+            username
+          )}" loading="lazy" />`;
     const mediaMarkup = hasImage
       ? `
         <div class="profile-grid-take__media-wrap">
-          <img class="profile-grid-take__media" src="${window.ClashlyUtils.escapeHtml(
-            take.image_url
-          )}" alt="Take image from ${window.ClashlyUtils.escapeHtml(username)}" loading="lazy" />
+          ${mediaVisualMarkup}
           <div class="profile-grid-take__overlay">
             <p class="profile-grid-take__excerpt">${excerpt}</p>
           </div>
