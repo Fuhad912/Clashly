@@ -469,8 +469,8 @@
 }
 
 .take-action--judge {
-  min-width: 86px;
-  padding: 0 12px;
+  min-width: 78px;
+  padding: 0 10px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   font-size: 0.7rem;
@@ -481,7 +481,7 @@
 }
 
 .take-action--judge .take-action__lead {
-  gap: 6px;
+  gap: 5px;
 }
 
 .take-action--judge .take-action__icon {
@@ -498,8 +498,15 @@
   border-color: var(--color-text-muted);
 }
 
-.take-item__save-action {
+.take-item__actions-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
+  flex-shrink: 0;
+}
+
+.take-item__save-action {
   flex-shrink: 0;
 }
 
