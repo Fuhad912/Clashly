@@ -104,12 +104,31 @@
   }
 
   /* Actions */
+  .take-item__meta {
+    align-items: flex-start;
+  }
+
+  .take-item__meta-main {
+    gap: 5px;
+  }
+
+  .take-item__share-mobile {
+    display: inline-flex;
+    min-width: 38px;
+    min-height: 38px;
+    margin-top: -4px;
+  }
+
   .take-item__actions-top {
     gap: 10px;
   }
 
   .take-item__actions {
     gap: 3px;
+  }
+
+  .take-item__actions .take-action--share {
+    display: none;
   }
 
   .take-action {
