@@ -137,11 +137,9 @@
       `,
       share: `
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="6.25" cy="12" r="1.9"></circle>
-          <circle cx="17.75" cy="6.1" r="1.9"></circle>
-          <circle cx="17.75" cy="17.9" r="1.9"></circle>
-          <path d="M8 11.1 16 7"></path>
-          <path d="M8 12.9 16 17"></path>
+          <path d="M14.3 5.25h4.45V9.7"></path>
+          <path d="M18.35 5.65 10.6 13.4"></path>
+          <path d="M18 13.1v3.55a2.1 2.1 0 0 1-2.1 2.1h-8.55a2.1 2.1 0 0 1-2.1-2.1V8.1A2.1 2.1 0 0 1 7.35 6h3.55"></path>
         </svg>
       `,
       judge: `
