@@ -1,16 +1,11 @@
 @media (max-width: 640px) {
-
-  /* Outer actions-top row: share sits at the end, never absolute */
   .take-item__actions-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 6px;
+    gap: 7px;
     width: 100%;
   }
 
-  /* Action row fills remaining space, never overflows */
   .take-item__actions {
     flex: 1 1 0;
     min-width: 0;
@@ -18,24 +13,27 @@
     flex-wrap: nowrap;
     align-items: center;
     gap: 4px;
-    overflow: hidden;           /* clips instead of scrolling */
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Every button grows equally into the available space */
+  .take-item__actions::-webkit-scrollbar {
+    display: none;
+  }
+
   .take-item__actions .take-action {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 0 0 auto;
+    min-width: 46px;
     min-height: 42px;
     height: 42px;
-    padding: 0;
+    padding: 0 10px;
     justify-content: center;
   }
 
   .take-action--agree,
   .take-action--disagree {
-    flex: 1.2 1 0;
-    min-width: 0;
-    padding: 0;
+    min-width: 70px;
   }
 
   .take-action--agree + .take-action--disagree {
@@ -43,48 +41,42 @@
   }
 
   .take-action--judge {
-    flex: 1.1 1 0;
-    min-width: 0;
-    padding: 0;
-    font-size: 0.65rem;
+    min-width: 82px;
+    padding: 0 11px;
+    font-size: 0.68rem;
   }
 
-  .take-item__save-action {
-    flex: 0 0 42px;
-    min-height: 42px;
-    height: 42px;
+  .take-action--judge .take-action__label-inline--full {
+    display: none;
+  }
+
+  .take-action--judge .take-action__label-inline--short {
+    display: inline;
+  }
+
+  .take-item__save-action,
+  .take-item__share-action {
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 999px;
+    justify-content: center;
+    align-items: center;
     margin-left: 0;
   }
 
-  /* Share lives at the END of actions-top, never in the actions row */
   .take-item__actions .take-action[data-action="share"] {
-    display: none;              /* remove from actions row */
+    display: none;
   }
 
-  .take-item__actions-top::after {
-    content: none;              /* no pseudo-element needed */
+  .take-item__actions-top > .take-item__share-action {
+    display: inline-flex;
   }
 
-  /* Re-add share as a real sibling — add this class in your HTML:
-     move the share button to be a direct child of .take-item__actions-top
-     outside of .take-item__actions                                        */
-  .take-item__actions-top > .take-action[data-action="share"] {
-    display: flex;
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
-    padding: 0;
-    border-radius: 999px;
-    background: var(--color-surface);
-    border: var(--line);
-    justify-content: center;
-    align-items: center;
-    margin-left: auto;          /* pushes share to the far right */
-  }
-
-  .take-item__actions-top > .take-action[data-action="share"] svg {
+  .take-item__actions-top > .take-item__share-action svg {
     width: 15px;
     height: 15px;
   }
