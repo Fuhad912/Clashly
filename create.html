@@ -98,6 +98,16 @@
       </section>
     </main>
 
+    <section id="upload-limit-modal" class="upload-limit-modal" hidden>
+      <div class="upload-limit-modal__backdrop" data-close-upload-limit="true"></div>
+      <article class="upload-limit-modal__panel" role="dialog" aria-modal="true" aria-labelledby="upload-limit-modal-message">
+        <p id="upload-limit-modal-message" class="upload-limit-modal__text">You can only upload a maximum of 2 photos</p>
+        <div class="upload-limit-modal__actions">
+          <button type="button" class="btn btn--ghost upload-limit-modal__ok" data-close-upload-limit="true">OK</button>
+        </div>
+      </article>
+    </section>
+
     <nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
