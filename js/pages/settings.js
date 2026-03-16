@@ -110,7 +110,7 @@
       copy.textContent = "Clashe is preparing install support for this browser.";
       trigger.hidden = true;
       trigger.disabled = true;
-      setInstallStatus("Reload this page in a moment if install does not appear.", "");
+      setInstallStatus("If you just opened Clashe for the first time, reload once after a moment.", "");
       return;
     }
 
@@ -133,7 +133,8 @@
     }
 
     card.hidden = false;
-    copy.textContent = "Install will appear here when this browser makes Clashe eligible. In Chrome or Edge, you can also check the browser menu for Install app.";
+    copy.textContent =
+      "Install will appear here when this browser makes Clashe eligible. If this is your first visit, wait a moment and reload once. In Chrome or Edge, you can also check the browser menu for Install app.";
     trigger.hidden = true;
     trigger.disabled = true;
     setInstallStatus("", "");
