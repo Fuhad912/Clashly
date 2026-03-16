@@ -730,6 +730,17 @@
   display: block;
 }
 
+.profile-grid-take__media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  min-height: 180px;
+}
+
+.profile-grid-take__media-grid .profile-grid-take__media {
+  min-height: 180px;
+}
+
 .profile-grid-take__body {
   min-height: 180px;
   padding: var(--space-4);
