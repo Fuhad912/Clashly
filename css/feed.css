@@ -436,8 +436,8 @@
 }
 
 .take-action svg {
-  width: 19px;
-  height: 19px;
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -453,9 +453,9 @@
 /* ── Vote buttons — use semantic color tokens ─────────────── */
 
 .take-action--vote {
-  min-width: 58px;
-  min-height: 52px;
-  padding: 4px 8px;
+  min-width: 64px;
+  min-height: 56px;
+  padding: 6px 10px;
   border-radius: var(--radius-1);
   color: var(--color-text-muted);
   background: transparent;
@@ -629,6 +629,23 @@
 .take-action--delete:hover {
   color: var(--color-disagree);
   background: var(--color-disagree-bg);
+}
+
+/* ── Share icon — forward-arrow style ──────────────────────── */
+
+/* Swap the SVG markup in your HTML templates to use this path:
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+     <polyline points="13 5 20 12 13 19"/>
+     <path d="M4 12h15"/>
+     <rect x="1" y="3" width="22" height="18" rx="3"/>
+   </svg>
+   Or use the icon-share-forward glyph from your icon library.      */
+
+.take-action--share .take-action__icon svg,
+.take-item__share-mobile svg {
+  width: 22px;
+  height: 22px;
 }
 
 /* ── Vote bar ──────────────────────────────────────────────── */
