@@ -3,35 +3,55 @@ const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 
 const APP_SHELL_ASSETS = [
-  "/",
-  "/index.html",
-  "/search.html",
-  "/settings.html",
-  "/css/variables.css",
-  "/css/base.css",
-  "/css/layout.css",
-  "/css/feed.css",
-  "/css/search.css",
-  "/css/settings.css",
-  "/css/comments-modal.css",
-  "/css/share-modal.css",
-  "/css/responsive.css",
-  "/js/theme.js",
-  "/js/loader.js",
-  "/js/app.js",
-  "/js/utils.js",
-  "/js/session.js",
-  "/js/pages/search.js",
-  "/js/pages/settings.js",
-  "/manifest.webmanifest",
-  "/assets/clashly-favicon.svg",
-  "/assets/pwa-192.png",
-  "/assets/pwa-512.png"
+  "./",
+  "./index.html",
+  "./search.html",
+  "./settings.html",
+  "./css/variables.css",
+  "./css/base.css",
+  "./css/layout.css",
+  "./css/feed.css",
+  "./css/search.css",
+  "./css/settings.css",
+  "./css/comments-modal.css",
+  "./css/share-modal.css",
+  "./css/responsive.css",
+  "./js/theme.js",
+  "./js/loader.js",
+  "./js/app.js",
+  "./js/utils.js",
+  "./js/session.js",
+  "./js/pages/search.js",
+  "./js/pages/settings.js",
+  "./manifest.webmanifest",
+  "./assets/clashly-favicon.svg",
+  "./assets/pwa-192.png",
+  "./assets/pwa-512.png"
 ];
+
+async function warmAppShell(cache) {
+  const requests = APP_SHELL_ASSETS.map((asset) =>
+    fetch(asset, { cache: "no-cache" })
+      .then((response) => {
+        if (!response || !response.ok) {
+          throw new Error(`Failed to precache ${asset}`);
+        }
+        return cache.put(asset, response);
+      })
+      .catch((error) => {
+        console.warn("[Clashe SW] Precache skipped:", asset, error);
+      })
+  );
+
+  await Promise.all(requests);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL_ASSETS)).then(() => self.skipWaiting())
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => warmAppShell(cache))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -96,7 +116,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, PAGE_CACHE, "/index.html"));
+    event.respondWith(networkFirst(request, PAGE_CACHE, "./index.html"));
     return;
   }
 
