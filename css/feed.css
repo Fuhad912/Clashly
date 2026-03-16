@@ -238,13 +238,22 @@
 
 .take-item__meta {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 6px;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   line-height: 1.4;
+}
+
+.take-item__meta-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .take-item__user {
@@ -271,6 +280,11 @@
 .take-item__dot {
   color: var(--color-dot);
   font-size: 0.6rem;
+}
+
+.take-item__share-mobile {
+  display: none;
+  flex-shrink: 0;
 }
 
 .take-owner-badge {
