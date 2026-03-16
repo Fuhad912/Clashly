@@ -66,6 +66,7 @@
     const promptOutcome = String(safeState.promptOutcome || "");
     const secureContext = safeState.secureContext !== false;
     const serviceWorkerReady = safeState.serviceWorkerReady !== false;
+    const promptCaptured = Boolean(safeState.promptCaptured);
     const iosLike = isIosLikeDevice();
 
     if (isInstalled) {
@@ -111,6 +112,16 @@
       trigger.hidden = true;
       trigger.disabled = true;
       setInstallStatus("If you just opened Clashe for the first time, reload once after a moment.", "");
+      return;
+    }
+
+    if (!promptCaptured) {
+      card.hidden = false;
+      copy.textContent =
+        "This browser has not exposed the install prompt yet. Open Clashe in Chrome or Edge over HTTPS or localhost, visit the home page once, then reload Settings.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("No install prompt has been captured from the browser yet.", "");
       return;
     }
 
@@ -330,6 +341,7 @@
           installed: false,
           canInstall: false,
           promptOutcome: "",
+          promptCaptured: false,
         });
       }
 
