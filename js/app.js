@@ -30,6 +30,7 @@
   let deferredInstallPrompt = null;
   let installPromptConsumed = false;
   let serviceWorkerRegistration = null;
+  let pwaInitialized = false;
   const pwaSubscribers = new Set();
   const pwaState = {
     supported: typeof window !== "undefined" && "BeforeInstallPromptEvent" in window,
@@ -214,6 +215,13 @@
         promptOutcome: "accepted",
       });
     });
+  }
+
+  function initPwa() {
+    if (pwaInitialized) return;
+    pwaInitialized = true;
+    bindPwaInstallEvents();
+    registerServiceWorker().catch(() => {});
   }
 
   function shouldUseCreateModal() {
@@ -1081,7 +1089,7 @@
   }
 
   function boot() {
-    bindPwaInstallEvents();
+    initPwa();
     buildTopNav();
     buildBottomNav();
     buildLegalFooter();
@@ -1094,8 +1102,6 @@
     bindNotificationsDrawer();
     syncAuthUi();
     window.addEventListener("clashly:auth-state", syncAuthUi);
-    registerServiceWorker().catch(() => {});
-
     window.ClashlyApp = {
       page,
       openCreateModal,
@@ -1111,5 +1117,6 @@
     };
   }
 
+  initPwa();
   document.addEventListener("DOMContentLoaded", boot);
 })();
