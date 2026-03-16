@@ -7,6 +7,8 @@
   const ONBOARDING_MODAL_ID = "onboarding-modal";
   const ONBOARDING_STORAGE_KEY_PREFIX = "clashe-onboarding-seen";
   const DEFAULT_PREVIEW_TEXT = "Image preview area";
+  const CREATE_UPLOAD_LIMIT_MODAL_ID = "create-modal-upload-limit";
+  const CREATE_UPLOAD_LIMIT_TIMEOUT_MS = 2600;
   const NOTIFICATIONS_DRAWER_ID = "notifications-drawer";
   const DESKTOP_NOTIFICATIONS_QUERY = "(min-width: 1025px)";
   const ONBOARDING_ENABLED_PAGES = new Set([
@@ -25,6 +27,8 @@
   let notificationsItems = [];
   let onboardingActiveUserId = "";
   let onboardingShownForUserId = "";
+  let createModalImageFiles = [];
+  let createUploadLimitModalTimer = null;
 
   const desktopLinks = [
     { id: "home", label: "Home", href: "index.html" },
@@ -463,6 +467,15 @@
           </div>
         </section>
       </div>
+      <section id="${CREATE_UPLOAD_LIMIT_MODAL_ID}" class="upload-limit-modal" hidden>
+        <div class="upload-limit-modal__backdrop" data-close-create-upload-limit="true"></div>
+        <article class="upload-limit-modal__panel" role="dialog" aria-modal="true" aria-labelledby="create-upload-limit-message">
+          <p id="create-upload-limit-message" class="upload-limit-modal__text">You can only upload a maximum of 2 photos</p>
+          <div class="upload-limit-modal__actions">
+            <button type="button" class="btn btn--ghost upload-limit-modal__ok" data-close-create-upload-limit="true">OK</button>
+          </div>
+        </article>
+      </section>
     `;
   }
 
@@ -734,9 +747,24 @@
     preview.textContent = DEFAULT_PREVIEW_TEXT;
   }
 
+  function mergeImageSelections(existingFiles, incomingFiles) {
+    const merged = [];
+    const seenKeys = new Set();
+    const source = [...(Array.isArray(existingFiles) ? existingFiles : []), ...(Array.isArray(incomingFiles) ? incomingFiles : [])];
+
+    source.forEach((file) => {
+      if (!file) return;
+      const key = [file.name, file.size, file.lastModified, file.type].join("::");
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      merged.push(file);
+    });
+
+    return merged;
+  }
+
   function getCreateImageFiles() {
-    const { imageInput } = getCreateModalElements();
-    return Array.from((imageInput && imageInput.files) || []).filter(Boolean);
+    return createModalImageFiles.slice();
   }
 
   function renderCreatePreview(files) {
@@ -752,25 +780,67 @@
     preview.classList.add("has-image");
     preview.classList.toggle("has-multiple", objectUrls.length > 1);
 
-    if (objectUrls.length === 1) {
-      preview.innerHTML = `<img src="${objectUrls[0]}" alt="Selected upload preview" />`;
-      return;
-    }
-
     preview.innerHTML = `
-      <div class="image-preview-grid">
+      <div class="image-preview-grid${objectUrls.length === 1 ? " image-preview-grid--single" : ""}">
         ${objectUrls
-          .map((url, index) => `<img src="${url}" alt="Selected upload preview ${index + 1}" />`)
+          .map(
+            (url, index) => `
+              <figure class="image-preview-item">
+                <img src="${url}" alt="Selected upload preview ${index + 1}" />
+                <button
+                  type="button"
+                  class="image-preview-remove"
+                  data-remove-create-image-index="${index}"
+                  aria-label="Remove image ${index + 1}"
+                  title="Remove image"
+                >
+                  &times;
+                </button>
+              </figure>
+            `
+          )
           .join("")}
       </div>
     `;
   }
 
+  function closeCreateUploadLimitModal() {
+    const modal = document.getElementById(CREATE_UPLOAD_LIMIT_MODAL_ID);
+    if (!modal) return;
+    modal.hidden = true;
+    if (createUploadLimitModalTimer) {
+      window.clearTimeout(createUploadLimitModalTimer);
+      createUploadLimitModalTimer = null;
+    }
+  }
+
+  function openCreateUploadLimitModal(maxImages) {
+    const modal = document.getElementById(CREATE_UPLOAD_LIMIT_MODAL_ID);
+    const message = document.getElementById("create-upload-limit-message");
+    if (!modal || !message) {
+      setCreateStatus(`You can only upload a maximum of ${maxImages} photos`, "error");
+      return;
+    }
+
+    message.textContent = `You can only upload a maximum of ${maxImages} photos`;
+    modal.hidden = false;
+
+    if (createUploadLimitModalTimer) {
+      window.clearTimeout(createUploadLimitModalTimer);
+    }
+    createUploadLimitModalTimer = window.setTimeout(() => {
+      closeCreateUploadLimitModal();
+    }, CREATE_UPLOAD_LIMIT_TIMEOUT_MS);
+  }
+
   function resetCreateForm() {
-    const { form } = getCreateModalElements();
+    const { form, imageInput } = getCreateModalElements();
     if (!form) return;
     form.reset();
+    createModalImageFiles = [];
+    if (imageInput) imageInput.value = "";
     resetCreatePreview();
+    closeCreateUploadLimitModal();
     updateCreateCount();
     setCreateStatus("", "");
   }
@@ -822,13 +892,14 @@
     const { modal } = getCreateModalElements();
     if (!modal) return;
     modal.hidden = true;
+    closeCreateUploadLimitModal();
     document.body.style.overflow = "";
   }
 
   function bindCreateModal() {
     if (!shouldUseCreateModal()) return;
     const elements = getCreateModalElements();
-    if (!elements.modal || !elements.form || !window.ClashlyTakes || !window.ClashlySession || !window.ClashlyCategories) return;
+    if (!elements.modal || !elements.form || !elements.preview || !elements.imageInput || !window.ClashlyTakes || !window.ClashlySession || !window.ClashlyCategories) return;
 
     updateCreateCount();
     populateCreateCategories();
@@ -838,23 +909,54 @@
       updateCreateCount();
     });
 
+    elements.preview.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const removeButton = target.closest("[data-remove-create-image-index]");
+      if (!removeButton) return;
+
+      event.preventDefault();
+      const index = Number(removeButton.getAttribute("data-remove-create-image-index"));
+      if (!Number.isFinite(index) || index < 0) return;
+
+      createModalImageFiles = createModalImageFiles.filter((_, fileIndex) => fileIndex !== index);
+      renderCreatePreview(createModalImageFiles);
+      setCreateStatus("", "");
+    });
+
     elements.imageInput.addEventListener("change", () => {
-      const files = getCreateImageFiles();
-      if (!files.length) {
-        resetCreatePreview();
+      const incomingFiles = Array.from((elements.imageInput && elements.imageInput.files) || []).filter(Boolean);
+      if (!incomingFiles.length) return;
+
+      const maxImages = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
+      if (createModalImageFiles.length >= maxImages) {
+        openCreateUploadLimitModal(maxImages);
+        elements.imageInput.value = "";
         return;
       }
 
-      const validation = window.ClashlyTakes.validateImageFiles(files);
+      const mergedFiles = mergeImageSelections(createModalImageFiles, incomingFiles);
+      let nextFiles = mergedFiles;
+      if (mergedFiles.length > maxImages) {
+        openCreateUploadLimitModal(maxImages);
+        nextFiles =
+          createModalImageFiles.length >= maxImages
+            ? createModalImageFiles.slice(0, maxImages)
+            : mergedFiles.slice(0, maxImages);
+      } else {
+        closeCreateUploadLimitModal();
+      }
+
+      const validation = window.ClashlyTakes.validateImageFiles(nextFiles);
       if (!validation.valid) {
         elements.imageInput.value = "";
-        resetCreatePreview();
         setCreateStatus(validation.error, "error");
         return;
       }
 
-      const maxImages = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
-      renderCreatePreview(files.slice(0, maxImages));
+      createModalImageFiles = nextFiles;
+      elements.imageInput.value = "";
+      renderCreatePreview(createModalImageFiles);
       setCreateStatus("", "");
     });
 
@@ -936,6 +1038,13 @@
       if (closeTrigger) {
         event.preventDefault();
         closeCreateModal();
+        return;
+      }
+
+      const closeUploadLimitTrigger = event.target.closest("[data-close-create-upload-limit='true']");
+      if (closeUploadLimitTrigger) {
+        event.preventDefault();
+        closeCreateUploadLimitModal();
       }
     });
 
