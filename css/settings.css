@@ -1,0 +1,241 @@
+.settings-shell {
+  min-height: calc(100vh - 120px);
+}
+
+.settings-shell .feed-head__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+}
+
+.settings-back-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.settings-stack {
+  display: grid;
+  gap: 12px;
+  padding: var(--space-4);
+}
+
+.settings-card {
+  border: var(--line);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  display: grid;
+  gap: 12px;
+}
+
+.settings-card__head h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.settings-card__head p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.settings-row--action {
+  align-items: flex-start;
+}
+
+.settings-row--action .settings-card__head {
+  flex: 1;
+}
+
+.settings-row--action .settings-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.settings-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-copy strong {
+  font-size: 0.92rem;
+}
+
+.settings-copy span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.settings-btn {
+  min-height: 40px;
+  border: var(--line);
+  border-radius: var(--radius-2);
+  padding: 0 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.settings-btn:hover {
+  background: var(--color-hover);
+}
+
+.settings-btn--danger {
+  color: var(--color-disagree);
+}
+
+.settings-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-card--danger {
+  border-color: color-mix(in srgb, var(--color-disagree) 35%, var(--color-border));
+}
+
+#settings-delete-status {
+  margin: 0;
+}
+
+.settings-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.settings-confirm-modal[hidden] {
+  display: none;
+}
+
+.settings-confirm-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.settings-confirm-modal__panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(100% - 28px, 360px);
+  border: var(--line);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  transform: translate(-50%, -48%) scale(0.98);
+  transition: transform 180ms ease;
+}
+
+.settings-confirm-modal__panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.settings-confirm-modal__panel p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.settings-confirm-modal__actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.settings-confirm-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-confirm-modal.is-open .settings-confirm-modal__panel {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+body.has-settings-confirm-open {
+  overflow: hidden;
+}
+
+.settings-email-form {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-email-form .settings-btn {
+  width: fit-content;
+  min-width: 170px;
+}
+
+.settings-email-form .status-message {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .settings-row--action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-row--action .settings-btn {
+    width: 100%;
+  }
+
+  .settings-stack {
+    padding: var(--space-3);
+  }
+
+  .settings-email-form .settings-btn {
+    width: 100%;
+  }
+
+  .settings-confirm-modal__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1025px) {
+  .settings-stack {
+    gap: 0;
+  }
+
+  .settings-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: var(--line);
+    padding: 16px 0;
+  }
+
+  .settings-card:first-child {
+    padding-top: 0;
+  }
+
+  .settings-card:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
