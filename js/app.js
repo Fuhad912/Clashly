@@ -37,6 +37,7 @@
     installed: false,
     promptOutcome: "",
     serviceWorkerReady: false,
+    secureContext: typeof window !== "undefined" ? window.isSecureContext : false,
   };
 
   const desktopLinks = [
@@ -180,6 +181,7 @@
       installed: isStandaloneDisplayMode(),
       canInstall: false,
       promptOutcome: "",
+      secureContext: window.isSecureContext,
     });
 
     window.addEventListener("beforeinstallprompt", (event) => {
@@ -199,6 +201,7 @@
         installed: false,
         canInstall: true,
         promptOutcome: "",
+        secureContext: window.isSecureContext,
       });
     });
 
