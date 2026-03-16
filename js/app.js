@@ -179,6 +179,23 @@
     }
   }
 
+  function applyInstallPrompt(event) {
+    if (isStandaloneDisplayMode()) {
+      updatePwaState({ installed: true, canInstall: false, promptCaptured: false });
+      return;
+    }
+    deferredInstallPrompt = event;
+    installPromptConsumed = false;
+    updatePwaState({
+      supported: true,
+      installed: false,
+      canInstall: true,
+      promptOutcome: "",
+      secureContext: window.isSecureContext,
+      promptCaptured: true,
+    });
+  }
+
   function bindPwaInstallEvents() {
     updatePwaState({
       installed: isStandaloneDisplayMode(),
@@ -188,38 +205,32 @@
       promptCaptured: false,
     });
 
-    window.addEventListener("beforeinstallprompt", (event) => {
-      event.preventDefault();
-      if (isStandaloneDisplayMode()) {
-        updatePwaState({
-        installed: true,
-        canInstall: false,
-        promptCaptured: false,
-      });
-      return;
+    // Pick up prompt that pwa-capture.js already caught before this code ran.
+    if (window.__pwaInstallPrompt && !window.__pwaInstallConsumed) {
+      applyInstallPrompt(window.__pwaInstallPrompt);
     }
 
-      deferredInstallPrompt = event;
-      installPromptConsumed = false;
-      updatePwaState({
-        supported: true,
-        installed: false,
-        canInstall: true,
-        promptOutcome: "",
-        secureContext: window.isSecureContext,
-        promptCaptured: true,
-      });
+    // Relay from pwa-capture.js (fires whether app.js loaded before or after).
+    window.addEventListener("clashly:install-prompt-ready", function (ev) {
+      applyInstallPrompt(ev.detail);
     });
 
-    window.addEventListener("appinstalled", () => {
+    // Safety net: direct listener in case pwa-capture.js didn't load first.
+    window.addEventListener("beforeinstallprompt", function (event) {
+      event.preventDefault();
+      applyInstallPrompt(event);
+    });
+
+    window.addEventListener("clashly:app-installed", function () {
       deferredInstallPrompt = null;
       installPromptConsumed = true;
-      updatePwaState({
-        installed: true,
-        canInstall: false,
-        promptOutcome: "accepted",
-        promptCaptured: false,
-      });
+      updatePwaState({ installed: true, canInstall: false, promptOutcome: "accepted", promptCaptured: false });
+    });
+
+    window.addEventListener("appinstalled", function () {
+      deferredInstallPrompt = null;
+      installPromptConsumed = true;
+      updatePwaState({ installed: true, canInstall: false, promptOutcome: "accepted", promptCaptured: false });
     });
   }
 
