@@ -1,93 +1,31 @@
-/* ── Mobile action row — full-width, evenly spaced ── */
-
 @media (max-width: 640px) {
 
-  .take-item__actions {
-    flex: 1 1 100%;
-    display: flex;
-    flex-wrap: nowrap;          /* keep all buttons on one line */
-    align-items: center;
-    gap: 4px;
-    overflow-x: visible;
-  }
-
-  /* All action buttons grow equally to fill the row */
-  .take-item__actions .take-action {
-    flex: 1 1 0;
-    min-width: 0;               /* let flex do the sizing */
-    min-height: 42px;           /* bigger tap target */
-    height: 42px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  /* Vote (Agree/Disagree) buttons — slightly wider since they carry a count */
-  .take-action--agree,
-  .take-action--disagree {
-    flex: 1.2 1 0;
-    min-width: 0;
-    padding: 0;
-  }
-
-  .take-action--agree + .take-action--disagree {
-    margin-left: 0;             /* gap handles spacing now */
-  }
-
-  /* Judge button */
-  .take-action--judge {
-    flex: 1.1 1 0;
-    min-width: 0;
-    padding: 0;
-    font-size: 0.65rem;
-  }
-
-  /* Save button */
-  .take-item__save-action {
-    flex: 0 0 42px;             /* fixed square — save is an icon-only action */
-    min-height: 42px;
-    height: 42px;
-    margin-left: 0;
-  }
-
-  /* Share button — pull back into the row, no longer absolutely positioned */
+  /* Share stays top-right of the post body, properly sized */
   .take-item__actions .take-action[data-action="share"] {
-    position: static;           /* undo the absolute positioning */
-    flex: 0 0 42px;
-    width: 42px;
-    height: 42px;
-    min-height: 42px;
-    min-width: 42px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0;
+    z-index: 2;
     border-radius: 999px;
     background: var(--color-surface);
     border: var(--line);
-    padding: 0;
+    justify-content: center;
+    align-items: center;
   }
 
   .take-item__actions .take-action[data-action="share"] svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
-  /* Bump icon sizes up slightly for all actions */
-  .take-action svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-/* ── Very small screens (≤360px) — same logic, tighter gap ── */
-
-@media (max-width: 360px) {
+  /* Remove share from the flex row so it doesn't affect spacing */
   .take-item__actions {
-    gap: 3px;
-  }
-
-  .take-item__actions .take-action {
-    min-height: 40px;
-    height: 40px;
-  }
-
-  .take-action--judge {
-    font-size: 0.6rem;
+    padding-right: 0;           /* no need to reserve space — share is out of flow */
   }
 }
