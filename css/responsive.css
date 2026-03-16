@@ -142,9 +142,18 @@
   }
 
   .take-action--vote {
-    min-width: 54px;
-    min-height: 50px;
-    padding: 4px 6px;
+    min-width: 48px;
+    min-height: 46px;
+    padding: 4px 5px;
+  }
+
+  .take-action--vote .take-action__label {
+    display: none;
+  }
+
+  .take-action--comments .take-action__icon svg {
+    width: 21px;
+    height: 21px;
   }
 
   .take-action--judge {
