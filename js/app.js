@@ -417,8 +417,8 @@
     return `${ONBOARDING_STORAGE_KEY_PREFIX}:${userId}`;
   }
 
-  function hasSeenOnboarding(userId) {
-    if (!userId) return true;
+  function hasSeenOnboardingLocally(userId) {
+    if (!userId) return false;
     try {
       return window.localStorage.getItem(getOnboardingStorageKey(userId)) === "1";
     } catch (_error) {
@@ -426,12 +426,42 @@
     }
   }
 
-  function markOnboardingSeen(userId) {
+  function setSeenOnboardingLocally(userId) {
     if (!userId) return;
     try {
       window.localStorage.setItem(getOnboardingStorageKey(userId), "1");
     } catch (_error) {
       // Ignore storage access failures.
+    }
+  }
+
+  async function hasSeenOnboarding(userId) {
+    if (!userId) return true;
+    // Fast path: already cached locally on this device.
+    if (hasSeenOnboardingLocally(userId)) return true;
+    // Slow path: check the database so returning users on new browsers
+    // are not shown the modal again.
+    if (window.ClashlyProfiles) {
+      try {
+        const { seen } = await window.ClashlyProfiles.hasSeenOnboardingInDb(userId);
+        if (seen) {
+          // Cache locally so future checks are instant.
+          setSeenOnboardingLocally(userId);
+          return true;
+        }
+      } catch (_err) {
+        // Network error — fall through and show modal (safe default).
+      }
+    }
+    return false;
+  }
+
+  function markOnboardingSeen(userId) {
+    if (!userId) return;
+    setSeenOnboardingLocally(userId);
+    // Write to DB in the background — don't block the UI.
+    if (window.ClashlyProfiles) {
+      window.ClashlyProfiles.markOnboardingSeenInDb(userId).catch(() => {});
     }
   }
 
@@ -511,12 +541,13 @@
     onboardingActiveUserId = "";
   }
 
-  function maybeShowOnboarding(userId) {
+  async function maybeShowOnboarding(userId) {
     if (!shouldUseOnboardingModal() || !userId) return;
     if (onboardingShownForUserId === userId) return;
 
     onboardingShownForUserId = userId;
-    if (hasSeenOnboarding(userId)) return;
+    const seen = await hasSeenOnboarding(userId);
+    if (seen) return;
     openOnboardingModal(userId);
   }
 
@@ -554,7 +585,7 @@
       return;
     }
 
-    maybeShowOnboarding(user.id);
+    maybeShowOnboarding(user.id).catch(() => {});
   }
 
   function bindLogoutActions() {
