@@ -2,7 +2,7 @@
   const STORAGE_KEY = "clashly-theme";
   const LIGHT = "light";
   const DARK = "dark";
-  const MANIFEST_HREF = "manifest.webmanifest";
+  const MANIFEST_HREF = "manifest.json";
   const APPLE_TOUCH_ICON_HREF = "assets/pwa-192.png";
   const THEME_COLOR_LIGHT = "#f5f5f7";
   const THEME_COLOR_DARK = "#0d0e10";
