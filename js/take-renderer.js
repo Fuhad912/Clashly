@@ -260,11 +260,9 @@
               ${loadingAttr}
             >
               <span class="take-action__stack">
-                <span class="take-action__lead">
-                  <span class="take-action__icon">${renderActionIcon("agree")}</span>
-                  <span class="take-action__count">${voteData.agreeCount}</span>
-                </span>
+                <span class="take-action__icon">${renderActionIcon("agree")}</span>
                 <span class="take-action__label">Agree</span>
+                <span class="take-action__count">${voteData.agreeCount}</span>
               </span>
             </button>
             <button
@@ -277,11 +275,9 @@
               ${loadingAttr}
             >
               <span class="take-action__stack">
-                <span class="take-action__lead">
-                  <span class="take-action__icon">${renderActionIcon("disagree")}</span>
-                  <span class="take-action__count">${voteData.disagreeCount}</span>
-                </span>
+                <span class="take-action__icon">${renderActionIcon("disagree")}</span>
                 <span class="take-action__label">Disagree</span>
+                <span class="take-action__count">${voteData.disagreeCount}</span>
               </span>
             </button>
             ${commentsAction}
