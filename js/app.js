@@ -33,7 +33,7 @@
   let pwaInitialized = false;
   const pwaSubscribers = new Set();
   const pwaState = {
-    supported: typeof window !== "undefined" && "BeforeInstallPromptEvent" in window,
+    supported: typeof window !== "undefined" && "serviceWorker" in navigator,
     canInstall: false,
     installed: false,
     promptOutcome: "",
@@ -1123,6 +1123,5 @@
     };
   }
 
-  initPwa();
   document.addEventListener("DOMContentLoaded", boot);
 })();
