@@ -29,7 +29,6 @@
   const desktopLinks = [
     { id: "home", label: "Home", href: "index.html" },
     { id: "search", label: "Search", href: "search.html" },
-    { id: "explore", label: "Explore", href: "explore.html" },
     { id: "notifications", label: "Notifications", href: "notifications.html" },
     { id: "create", label: "Create", href: "create.html", opensModal: true },
     { id: "profile", label: "Profile", href: "profile.html" },
@@ -38,7 +37,7 @@
 
   const mobileLinks = [
     { id: "home", label: "Home", href: "index.html" },
-    { id: "explore", label: "Explore", href: "explore.html" },
+    { id: "search", label: "Search", href: "search.html" },
     { id: "create", label: "Create", href: "create.html", opensModal: true },
     { id: "notifications", label: "Notifications", href: "notifications.html" },
     { id: "profile", label: "Profile", href: "profile.html" },
@@ -62,8 +61,7 @@
 
   function resolveActiveNavLink(id) {
     if (page === "take" || page === "home" || page === "hashtag") return id === "home";
-    if (page === "search") return id === "explore";
-    if (page === "category") return id === "explore";
+    if (page === "search" || page === "explore" || page === "category") return id === "search";
     return id === page;
   }
 
