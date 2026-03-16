@@ -39,6 +39,7 @@
     promptOutcome: "",
     serviceWorkerReady: false,
     secureContext: typeof window !== "undefined" ? window.isSecureContext : false,
+    promptCaptured: false,
   };
 
   const desktopLinks = [
@@ -114,6 +115,7 @@
     if (!deferredInstallPrompt || installPromptConsumed) {
       updatePwaState({
         canInstall: false,
+        promptCaptured: false,
       });
       return {
         status: "unavailable",
@@ -183,17 +185,19 @@
       canInstall: false,
       promptOutcome: "",
       secureContext: window.isSecureContext,
+      promptCaptured: false,
     });
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       if (isStandaloneDisplayMode()) {
         updatePwaState({
-          installed: true,
-          canInstall: false,
-        });
-        return;
-      }
+        installed: true,
+        canInstall: false,
+        promptCaptured: false,
+      });
+      return;
+    }
 
       deferredInstallPrompt = event;
       installPromptConsumed = false;
@@ -203,6 +207,7 @@
         canInstall: true,
         promptOutcome: "",
         secureContext: window.isSecureContext,
+        promptCaptured: true,
       });
     });
 
@@ -213,6 +218,7 @@
         installed: true,
         canInstall: false,
         promptOutcome: "accepted",
+        promptCaptured: false,
       });
     });
   }
