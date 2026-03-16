@@ -115,7 +115,7 @@
     flex: 1 1 100%;
     flex-wrap: wrap;
     overflow-x: visible;
-    gap: 4px;
+    gap: 3px;
   }
 
   .take-item__body {
@@ -143,12 +143,12 @@
 
   .take-action--agree,
   .take-action--disagree {
-    min-width: 62px;
-    padding: 0 5px;
+    min-width: 56px;
+    padding: 0 3px;
   }
 
   .take-action--agree + .take-action--disagree {
-    margin-left: -2px;
+    margin-left: -5px;
   }
 
   .take-action--vote .take-action__stack {
@@ -452,6 +452,16 @@
     font-size: 0.72rem;
   }
 
+  .take-action--agree,
+  .take-action--disagree {
+    min-width: 54px;
+    padding: 0 3px;
+  }
+
+  .take-action--agree + .take-action--disagree {
+    margin-left: -6px;
+  }
+
   .take-action--vote .take-action__label {
     display: none;
   }
@@ -492,6 +502,16 @@
   .take-action--vote {
     min-width: 72px;
     padding: 0 6px;
+  }
+
+  .take-action--agree,
+  .take-action--disagree {
+    min-width: 58px;
+    padding: 0 4px;
+  }
+
+  .take-action--agree + .take-action--disagree {
+    margin-left: -5px;
   }
 
   /* Comfortable profile stat sizing */
