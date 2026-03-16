@@ -1,4 +1,4 @@
-const VERSION = "clashe-pwa-v1";
+const VERSION = "clashe-pwa-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 
@@ -23,6 +23,7 @@ const APP_SHELL_ASSETS = [
   "./js/session.js",
   "./js/pages/search.js",
   "./js/pages/settings.js",
+  "./manifest.json",
   "./manifest.webmanifest",
   "./assets/clashly-favicon.svg",
   "./assets/pwa-192.png",
