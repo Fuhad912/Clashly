@@ -124,9 +124,10 @@
       `,
       comments: `
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5.25 17.85V6.95A1.7 1.7 0 0 1 6.95 5.25h10.1a1.7 1.7 0 0 1 1.7 1.7v7.05a1.7 1.7 0 0 1-1.7 1.7H10.7l-5.45 2.15Z"></path>
-          <path d="M8.2 9.45h7.6"></path>
-          <path d="M8.2 12.2h5.4"></path>
+          <path d="M7.1 5.25h9.8a2.15 2.15 0 0 1 2.15 2.15v6.1a2.15 2.15 0 0 1-2.15 2.15h-5.1l-3.95 3.1v-3.1H7.1a2.15 2.15 0 0 1-2.15-2.15V7.4A2.15 2.15 0 0 1 7.1 5.25Z"></path>
+          <circle cx="9.35" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
+          <circle cx="12" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
+          <circle cx="14.65" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
         </svg>
       `,
       bookmark: `
@@ -183,6 +184,19 @@
     const commentsLabel = commentCount > 0 ? `Open comments (${commentCount})` : "Open comments";
     const loadingAttr = voteData.isLoading ? " disabled" : "";
     const shareUrl = window.ClashlyUtils.toTakeUrl(take.id);
+    const shareAction = `
+      <button
+        type="button"
+        class="take-action take-action--share"
+        data-action="share"
+        data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+        data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
+        aria-label="Share take"
+        title="Share take"
+      >
+        <span class="take-action__icon">${renderActionIcon("share")}</span>
+      </button>
+    `;
     const commentsAction =
       options && options.hideCommentsAction
         ? ""
@@ -272,17 +286,7 @@
             </button>
             ${commentsAction}
             ${judgeAction}
-            <button
-              type="button"
-              class="take-action"
-              data-action="share"
-              data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-              data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
-              aria-label="Share take"
-              title="Share take"
-            >
-              <span class="take-action__icon">${renderActionIcon("share")}</span>
-            </button>
+            ${shareAction}
             ${deleteAction}
           </div>
           <button
@@ -314,6 +318,19 @@
     const hasImage = Boolean(take.image_url);
     const ownerBadge = getOwnerBadge(take, options.currentUserId);
     const openLink = options.showOpenLink ? `<a href="${takeHref}" class="take-item__open">Open</a>` : "";
+    const mobileShareAction = `
+      <button
+        type="button"
+        class="take-action take-action--share take-item__share-mobile"
+        data-action="share"
+        data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+        data-share-url="${window.ClashlyUtils.escapeHtml(window.ClashlyUtils.toTakeUrl(take.id))}"
+        aria-label="Share take"
+        title="Share take"
+      >
+        <span class="take-action__icon">${renderActionIcon("share")}</span>
+      </button>
+    `;
     const mediaMarkup = hasImage
       ? `
         <div class="take-item__media">
@@ -329,13 +346,16 @@
         ${avatarMarkup}
         <div class="take-item__body">
           <header class="take-item__meta">
-            <a href="${profileHref}" class="take-item__user">${window.ClashlyUtils.escapeHtml(username)}</a>
-            <span class="take-item__dot">&bull;</span>
-            <time datetime="${window.ClashlyUtils.escapeHtml(take.created_at)}">${window.ClashlyUtils.escapeHtml(
-              relativeTime
-            )}</time>
-            ${ownerBadge}
-            ${openLink}
+            <div class="take-item__meta-main">
+              <a href="${profileHref}" class="take-item__user">${window.ClashlyUtils.escapeHtml(username)}</a>
+              <span class="take-item__dot">&bull;</span>
+              <time datetime="${window.ClashlyUtils.escapeHtml(take.created_at)}">${window.ClashlyUtils.escapeHtml(
+                relativeTime
+              )}</time>
+              ${ownerBadge}
+              ${openLink}
+            </div>
+            ${mobileShareAction}
           </header>
           <p class="take-item__text">${renderTakeText(take.content)}</p>
           ${mediaMarkup}
