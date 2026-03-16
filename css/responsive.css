@@ -46,8 +46,7 @@
   }
 
   .home-head__search {
-    width: 34px;
-    height: 34px;
+    display: none;
   }
 
   .feed-head__inner {
