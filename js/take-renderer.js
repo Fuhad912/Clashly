@@ -242,7 +242,8 @@
         >
           <span class="take-action__lead">
             <span class="take-action__icon take-action__icon--judge">${renderActionIcon("judge")}</span>
-            <span>AI Judge</span>
+            <span class="take-action__label-inline take-action__label-inline--full">AI Judge</span>
+            <span class="take-action__label-inline take-action__label-inline--short">Judge</span>
           </span>
         </button>`
       : "";
@@ -300,17 +301,6 @@
             </button>
             ${commentsAction}
             ${judgeAction}
-            <button
-              type="button"
-              class="take-action"
-              data-action="share"
-              data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
-              data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
-              aria-label="Share take"
-              title="Share take"
-            >
-              <span class="take-action__icon">${renderActionIcon("share")}</span>
-            </button>
             ${deleteAction}
           </div>
           <button
@@ -323,6 +313,17 @@
             title="${bookmarkLabel} take"
           >
             <span class="take-action__icon">${renderActionIcon("bookmark")}</span>
+          </button>
+          <button
+            type="button"
+            class="take-action take-action--share take-item__share-action"
+            data-action="share"
+            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+            data-share-url="${window.ClashlyUtils.escapeHtml(shareUrl)}"
+            aria-label="Share take"
+            title="Share take"
+          >
+            <span class="take-action__icon">${renderActionIcon("share")}</span>
           </button>
         </div>
         ${renderVoteSplit(voteData)}
