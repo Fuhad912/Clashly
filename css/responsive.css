@@ -120,11 +120,15 @@
   }
 
   .take-item__actions-top {
-    gap: 10px;
+    gap: 6px;
   }
 
   .take-item__actions {
-    gap: 3px;
+    gap: 2px;
+  }
+
+  .take-item__actions-side {
+    gap: 4px;
   }
 
   .take-item__actions .take-action--share {
@@ -141,6 +145,13 @@
     min-width: 54px;
     min-height: 50px;
     padding: 4px 6px;
+  }
+
+  .take-action--judge {
+    min-width: 70px;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 0.66rem;
   }
 
   .take-vote-split {
