@@ -9,6 +9,8 @@
   const DEFAULT_PREVIEW_TEXT = "Image preview area";
   const NOTIFICATIONS_DRAWER_ID = "notifications-drawer";
   const DESKTOP_NOTIFICATIONS_QUERY = "(min-width: 1025px)";
+  const SERVICE_WORKER_PATH = "sw.js";
+  const PWA_STATE_EVENT = "clashly:pwa-state";
   const ONBOARDING_ENABLED_PAGES = new Set([
     "home",
     "explore",
@@ -25,6 +27,17 @@
   let notificationsItems = [];
   let onboardingActiveUserId = "";
   let onboardingShownForUserId = "";
+  let deferredInstallPrompt = null;
+  let installPromptConsumed = false;
+  let serviceWorkerRegistration = null;
+  const pwaSubscribers = new Set();
+  const pwaState = {
+    supported: typeof window !== "undefined" && "BeforeInstallPromptEvent" in window,
+    canInstall: false,
+    installed: false,
+    promptOutcome: "",
+    serviceWorkerReady: false,
+  };
 
   const desktopLinks = [
     { id: "home", label: "Home", href: "index.html" },
@@ -42,6 +55,163 @@
     { id: "notifications", label: "Notifications", href: "notifications.html" },
     { id: "profile", label: "Profile", href: "profile.html" },
   ];
+
+  function isStandaloneDisplayMode() {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      window.matchMedia("(display-mode: minimal-ui)").matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function emitPwaState() {
+    const snapshot = { ...pwaState };
+    pwaSubscribers.forEach((subscriber) => {
+      try {
+        subscriber(snapshot);
+      } catch (error) {
+        console.error("[Clashe] PWA subscriber failed.", error);
+      }
+    });
+    window.dispatchEvent(
+      new CustomEvent(PWA_STATE_EVENT, {
+        detail: snapshot,
+      })
+    );
+  }
+
+  function updatePwaState(patch) {
+    Object.assign(pwaState, patch || {});
+    emitPwaState();
+  }
+
+  function getPwaState() {
+    return { ...pwaState };
+  }
+
+  function subscribePwaState(callback) {
+    if (typeof callback !== "function") {
+      return function noop() {};
+    }
+    pwaSubscribers.add(callback);
+    callback(getPwaState());
+    return function unsubscribe() {
+      pwaSubscribers.delete(callback);
+    };
+  }
+
+  async function promptPwaInstall() {
+    if (pwaState.installed) {
+      return {
+        status: "installed",
+        outcome: "accepted",
+      };
+    }
+
+    if (!deferredInstallPrompt || installPromptConsumed) {
+      updatePwaState({
+        canInstall: false,
+      });
+      return {
+        status: "unavailable",
+        outcome: "",
+      };
+    }
+
+    const savedPrompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    installPromptConsumed = true;
+    updatePwaState({
+      canInstall: false,
+      promptOutcome: "",
+    });
+
+    try {
+      await savedPrompt.prompt();
+      const userChoice = await savedPrompt.userChoice;
+      const outcome = userChoice && userChoice.outcome === "accepted" ? "accepted" : "dismissed";
+      updatePwaState({
+        promptOutcome: outcome,
+      });
+      return {
+        status: outcome,
+        outcome,
+      };
+    } catch (error) {
+      console.error("[Clashe] Install prompt failed.", error);
+      updatePwaState({
+        promptOutcome: "dismissed",
+      });
+      return {
+        status: "error",
+        outcome: "",
+      };
+    }
+  }
+
+  async function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) {
+      updatePwaState({
+        serviceWorkerReady: false,
+      });
+      return null;
+    }
+
+    try {
+      serviceWorkerRegistration = await navigator.serviceWorker.register(SERVICE_WORKER_PATH, {
+        scope: "./",
+      });
+      updatePwaState({
+        serviceWorkerReady: true,
+      });
+      return serviceWorkerRegistration;
+    } catch (error) {
+      console.error("[Clashe] Service worker registration failed.", error);
+      updatePwaState({
+        serviceWorkerReady: false,
+      });
+      return null;
+    }
+  }
+
+  function bindPwaInstallEvents() {
+    updatePwaState({
+      installed: isStandaloneDisplayMode(),
+      canInstall: false,
+      promptOutcome: "",
+    });
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      if (isStandaloneDisplayMode()) {
+        updatePwaState({
+          installed: true,
+          canInstall: false,
+        });
+        return;
+      }
+
+      deferredInstallPrompt = event;
+      installPromptConsumed = false;
+      updatePwaState({
+        supported: true,
+        installed: false,
+        canInstall: true,
+        promptOutcome: "",
+      });
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      installPromptConsumed = true;
+      updatePwaState({
+        installed: true,
+        canInstall: false,
+        promptOutcome: "accepted",
+      });
+    });
+  }
 
   function shouldUseCreateModal() {
     return page !== "auth" && page !== "profile-setup" && page !== "create";
@@ -908,6 +1078,7 @@
   }
 
   function boot() {
+    bindPwaInstallEvents();
     buildTopNav();
     buildBottomNav();
     buildLegalFooter();
@@ -920,11 +1091,20 @@
     bindNotificationsDrawer();
     syncAuthUi();
     window.addEventListener("clashly:auth-state", syncAuthUi);
+    registerServiceWorker().catch(() => {});
 
     window.ClashlyApp = {
       page,
       openCreateModal,
       createEventName: CREATE_EVENT,
+    };
+
+    window.ClashlyPWA = {
+      getState: getPwaState,
+      subscribe: subscribePwaState,
+      promptInstall: promptPwaInstall,
+      registerServiceWorker,
+      stateEventName: PWA_STATE_EVENT,
     };
   }
 
