@@ -511,17 +511,17 @@
   }
 
   .comments-drawer__body .comment-item__actions {
-    gap: 14px;
-    margin-top: 10px;
+    gap: 16px;
+    margin-top: 12px;
   }
 
   .comments-drawer__body .comment-action {
-    min-height: 32px;
-    padding: 4px 0;
+    min-height: 36px;
+    padding: 5px 0;
     border-radius: 0;
     background: transparent;
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
     letter-spacing: -0.01em;
   }
 
@@ -535,7 +535,7 @@
   .comments-drawer__body .comment-action--like {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     text-decoration: none;
   }
 
@@ -546,8 +546,8 @@
   }
 
   .comments-drawer__body .comment-action--like .comment-action__icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.9;
@@ -556,7 +556,8 @@
   }
 
   .comments-drawer__body .comment-action--like .comment-action__count {
-    font-size: 0.82rem;
+    font-size: 0.88rem;
+    font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -578,9 +579,9 @@
   }
 
   .comments-drawer__body .comment-action--icon-plain {
-    min-width: 28px;
-    min-height: 28px;
-    padding: 2px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
     color: #dc2626;
     background: transparent;
     border: 0;
@@ -594,8 +595,8 @@
   }
 
   .comments-drawer__body .comment-action--icon-plain .comment-action__icon svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2;
