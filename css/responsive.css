@@ -82,6 +82,7 @@
     margin-bottom: 5px;
     gap: 5px;
     font-size: 0.75rem;
+    padding-right: 36px;
   }
 
   .feed-stream .take-item__text,
@@ -117,6 +118,10 @@
     gap: 4px;
   }
 
+  .take-item__body {
+    position: relative;
+  }
+
   .take-action {
     min-height: 36px;
     min-width: 36px;
@@ -138,7 +143,12 @@
 
   .take-action--agree,
   .take-action--disagree {
-    min-width: 66px;
+    min-width: 62px;
+    padding: 0 5px;
+  }
+
+  .take-action--agree + .take-action--disagree {
+    margin-left: -2px;
   }
 
   .take-action--vote .take-action__stack {
@@ -166,6 +176,27 @@
 
   .take-item__save-action {
     margin-left: 0;
+  }
+
+  /* Pull share out of action row on mobile */
+  .take-item__actions .take-action[data-action="share"] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 30px;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    z-index: 2;
+    border-radius: 999px;
+    background: var(--color-surface);
+    border: var(--line);
+  }
+
+  .take-item__actions .take-action[data-action="share"] svg {
+    width: 14px;
+    height: 14px;
   }
 
   .take-vote-split {
