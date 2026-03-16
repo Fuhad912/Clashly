@@ -50,6 +50,12 @@
     };
   }
 
+  function isIosLikeDevice() {
+    const ua = window.navigator.userAgent || "";
+    const platform = window.navigator.platform || "";
+    return /iphone|ipad|ipod/i.test(ua) || (platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+  }
+
   function renderInstallState(state) {
     const { card, copy, trigger } = getInstallElements();
     if (!card || !copy || !trigger) return;
@@ -58,6 +64,9 @@
     const isInstalled = Boolean(safeState.installed);
     const canInstall = Boolean(safeState.canInstall);
     const promptOutcome = String(safeState.promptOutcome || "");
+    const secureContext = safeState.secureContext !== false;
+    const serviceWorkerReady = safeState.serviceWorkerReady !== false;
+    const iosLike = isIosLikeDevice();
 
     if (isInstalled) {
       card.hidden = false;
@@ -75,6 +84,33 @@
       trigger.disabled = false;
       trigger.textContent = "Install Clashe";
       setInstallStatus("", "");
+      return;
+    }
+
+    if (!secureContext) {
+      card.hidden = false;
+      copy.textContent = "Install is unavailable because this page is not running on HTTPS or localhost.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("Use HTTPS or localhost to enable install.", "error");
+      return;
+    }
+
+    if (iosLike) {
+      card.hidden = false;
+      copy.textContent = "On iPhone or iPad, install Clashe from Safari using Share, then Add to Home Screen.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("Manual install is required on iOS.", "");
+      return;
+    }
+
+    if (!serviceWorkerReady) {
+      card.hidden = false;
+      copy.textContent = "Clashe is preparing install support for this browser.";
+      trigger.hidden = true;
+      trigger.disabled = true;
+      setInstallStatus("Reload this page in a moment if install does not appear.", "");
       return;
     }
 
@@ -96,10 +132,10 @@
       return;
     }
 
-    card.hidden = true;
-    trigger.hidden = false;
-    trigger.disabled = false;
-    trigger.textContent = "Install Clashe";
+    card.hidden = false;
+    copy.textContent = "Install will appear here when this browser makes Clashe eligible. In Chrome or Edge, you can also check the browser menu for Install app.";
+    trigger.hidden = true;
+    trigger.disabled = true;
     setInstallStatus("", "");
   }
 
