@@ -174,6 +174,10 @@
   padding: 0;
 }
 
+.image-preview-placeholder.has-multiple {
+  display: block;
+}
+
 .image-preview-placeholder img {
   width: 100%;
   height: 100%;
@@ -189,11 +193,96 @@
   min-height: 132px;
 }
 
+.image-preview-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.image-preview-item {
+  position: relative;
+  min-height: 132px;
+  margin: 0;
+  background: var(--color-surface-soft);
+}
+
 .image-preview-grid img {
   width: 100%;
   height: 100%;
   max-height: 280px;
   object-fit: cover;
+  display: block;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.56);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.image-preview-remove:hover,
+.image-preview-remove:focus-visible {
+  background: rgba(185, 28, 28, 0.9);
+}
+
+.image-preview-remove:active {
+  transform: scale(0.96);
+}
+
+.upload-limit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+}
+
+.upload-limit-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 7, 10, 0.24);
+}
+
+.upload-limit-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 320px);
+  margin: max(14vh, 90px) auto 0;
+  padding: 14px;
+  border: var(--line);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.upload-limit-modal__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.upload-limit-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.upload-limit-modal__ok {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: var(--radius-1);
 }
 
 .composer-actions {
@@ -290,3 +379,4 @@
   background: var(--color-surface);
   border-bottom-color: var(--color-border);
 }
+  
