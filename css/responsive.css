@@ -1,31 +1,91 @@
 @media (max-width: 640px) {
 
-  /* Share stays top-right of the post body, properly sized */
-  .take-item__actions .take-action[data-action="share"] {
-    position: absolute;
-    top: 0;
-    right: 0;
-    flex: none;
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    min-height: 38px;
+  /* Outer actions-top row: share sits at the end, never absolute */
+  .take-item__actions-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* Action row fills remaining space, never overflows */
+  .take-item__actions {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;           /* clips instead of scrolling */
+  }
+
+  /* Every button grows equally into the available space */
+  .take-item__actions .take-action {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 42px;
+    height: 42px;
     padding: 0;
-    z-index: 2;
+    justify-content: center;
+  }
+
+  .take-action--agree,
+  .take-action--disagree {
+    flex: 1.2 1 0;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .take-action--agree + .take-action--disagree {
+    margin-left: 0;
+  }
+
+  .take-action--judge {
+    flex: 1.1 1 0;
+    min-width: 0;
+    padding: 0;
+    font-size: 0.65rem;
+  }
+
+  .take-item__save-action {
+    flex: 0 0 42px;
+    min-height: 42px;
+    height: 42px;
+    margin-left: 0;
+  }
+
+  /* Share lives at the END of actions-top, never in the actions row */
+  .take-item__actions .take-action[data-action="share"] {
+    display: none;              /* remove from actions row */
+  }
+
+  .take-item__actions-top::after {
+    content: none;              /* no pseudo-element needed */
+  }
+
+  /* Re-add share as a real sibling — add this class in your HTML:
+     move the share button to be a direct child of .take-item__actions-top
+     outside of .take-item__actions                                        */
+  .take-item__actions-top > .take-action[data-action="share"] {
+    display: flex;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
     border-radius: 999px;
     background: var(--color-surface);
     border: var(--line);
     justify-content: center;
     align-items: center;
+    margin-left: auto;          /* pushes share to the far right */
   }
 
-  .take-item__actions .take-action[data-action="share"] svg {
+  .take-item__actions-top > .take-action[data-action="share"] svg {
     width: 15px;
     height: 15px;
-  }
-
-  /* Remove share from the flex row so it doesn't affect spacing */
-  .take-item__actions {
-    padding-right: 0;           /* no need to reserve space — share is out of flow */
   }
 }
