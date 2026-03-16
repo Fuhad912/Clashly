@@ -2,6 +2,16 @@
   let currentUserId = "";
   let currentQuery = "";
   let currentTakeResults = [];
+  let currentTrendingTopics = [];
+
+  const EXPLORE_LANE_THEMES = [
+    { accent: "#ff6f4d", glow: "rgba(255, 111, 77, 0.18)", surface: "rgba(255, 111, 77, 0.08)" },
+    { accent: "#0ea5e9", glow: "rgba(14, 165, 233, 0.18)", surface: "rgba(14, 165, 233, 0.08)" },
+    { accent: "#16a34a", glow: "rgba(22, 163, 74, 0.18)", surface: "rgba(22, 163, 74, 0.08)" },
+    { accent: "#d97706", glow: "rgba(217, 119, 6, 0.18)", surface: "rgba(217, 119, 6, 0.08)" },
+    { accent: "#db2777", glow: "rgba(219, 39, 119, 0.18)", surface: "rgba(219, 39, 119, 0.08)" },
+    { accent: "#7c3aed", glow: "rgba(124, 58, 237, 0.18)", surface: "rgba(124, 58, 237, 0.08)" },
+  ];
 
   function getQuery() {
     const params = new URLSearchParams(window.location.search);
@@ -43,6 +53,18 @@
     }
   }
 
+  function setExploreState(message, type) {
+    const stateEl = document.getElementById("search-explore-state");
+    if (!stateEl) return;
+
+    stateEl.hidden = !message;
+    stateEl.textContent = message || "";
+    stateEl.classList.remove("is-error");
+    if (type === "error") {
+      stateEl.classList.add("is-error");
+    }
+  }
+
   function updateHeader() {
     const titleEl = document.getElementById("search-title");
     const subtitleEl = document.getElementById("search-subtitle");
@@ -50,7 +72,7 @@
     if (!currentQuery) {
       document.title = "Clashe | Search";
       if (titleEl) titleEl.textContent = "Discover";
-      if (subtitleEl) subtitleEl.textContent = "Explore people, takes, and hashtags moving through Clashe.";
+      if (subtitleEl) subtitleEl.textContent = "Search fast, then keep scrolling into live lanes built from the floor.";
       syncSearchInput();
       return;
     }
@@ -59,6 +81,222 @@
     if (titleEl) titleEl.textContent = `Results for "${currentQuery}"`;
     if (subtitleEl) subtitleEl.textContent = "Grouped by takes, users, and hashtags.";
     syncSearchInput();
+  }
+
+  function toCategoryHref(slug) {
+    return `category.html?category=${encodeURIComponent(slug)}`;
+  }
+
+  function getLaneTheme(index) {
+    return EXPLORE_LANE_THEMES[index % EXPLORE_LANE_THEMES.length];
+  }
+
+  function getKeywordOrbs(keywords) {
+    return keywords
+      .slice(0, 3)
+      .map((keyword) => {
+        const label = String(keyword || "").replace(/^#/, "").trim();
+        const initials = label.slice(0, 2).toUpperCase();
+        return `<span class="search-explore-card__orb" aria-hidden="true">${window.ClashlyUtils.escapeHtml(initials || "CL")}</span>`;
+      })
+      .join("");
+  }
+
+  function summarizeLaneSignal(category, topCategorySlugs, topHashtags) {
+    const keywordList = Array.isArray(category.keywords) ? category.keywords.map((keyword) => String(keyword || "").toLowerCase()) : [];
+    const trendingMatches = currentTrendingTopics
+      .map((topic) => String(topic.tag || "").toLowerCase())
+      .filter((tag) => keywordList.includes(tag))
+      .slice(0, 2);
+    const personalMatches = keywordList.filter((keyword) => topHashtags.has(keyword)).slice(0, 2);
+    const isPreferredCategory = topCategorySlugs.has(String(category.slug || "").toLowerCase());
+
+    if (isPreferredCategory && personalMatches.length) {
+      return {
+        eyebrow: "For you",
+        note: `Because you keep circling ${personalMatches.map((tag) => `#${tag}`).join(" and ")}.`,
+      };
+    }
+
+    if (isPreferredCategory) {
+      return {
+        eyebrow: "For you",
+        note: "This lane lines up with where you have been spending attention lately.",
+      };
+    }
+
+    if (trendingMatches.length) {
+      return {
+        eyebrow: "Trending now",
+        note: `Hot around ${trendingMatches.map((tag) => `#${tag}`).join(" and ")} right now.`,
+      };
+    }
+
+    if ((category.take_count || 0) >= 12) {
+      return {
+        eyebrow: "Busy lane",
+        note: "High posting volume and fresh arguments are pushing this lane up.",
+      };
+    }
+
+    return {
+      eyebrow: "Fresh lane",
+      note: "A cleaner pocket to enter before the debate gets crowded.",
+    };
+  }
+
+  function scoreExploreCategory(category, signalSummary) {
+    const topCategorySlugs = new Set(
+      ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.categories) || []).map((slug) => String(slug || "").toLowerCase())
+    );
+    const topHashtags = new Set(
+      ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.hashtags) || []).map((tag) => String(tag || "").toLowerCase())
+    );
+    const keywordList = Array.isArray(category.keywords) ? category.keywords.map((keyword) => String(keyword || "").toLowerCase()) : [];
+    const trendingMatches = currentTrendingTopics.filter((topic) => keywordList.includes(String(topic.tag || "").toLowerCase())).length;
+    const personalMatches = keywordList.filter((keyword) => topHashtags.has(keyword)).length;
+    const preferredCategory = topCategorySlugs.has(String(category.slug || "").toLowerCase()) ? 18 : 0;
+    return preferredCategory + personalMatches * 6 + trendingMatches * 4 + Math.min(Number(category.take_count || 0), 36);
+  }
+
+  function renderExploreSignals(categories, signalSummary) {
+    const signalsEl = document.getElementById("search-explore-signals");
+    const subtitleEl = document.getElementById("search-explore-subtitle");
+    if (!signalsEl || !subtitleEl) return;
+
+    const topCategorySlugs = ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.categories) || []).slice(0, 3);
+    const topHashtags = ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.hashtags) || []).slice(0, 4);
+    const categoryNameMap = new Map((categories || []).map((category) => [String(category.slug || "").toLowerCase(), category.name]));
+    const bits = [
+      ...topCategorySlugs.map((slug) => ({
+        label: categoryNameMap.get(String(slug || "").toLowerCase()) || slug,
+        kind: "lane",
+      })),
+      ...topHashtags.map((tag) => ({
+        label: `#${tag}`,
+        kind: "tag",
+      })),
+    ].slice(0, 6);
+
+    if (!bits.length) {
+      signalsEl.hidden = true;
+      signalsEl.innerHTML = "";
+      subtitleEl.textContent = "Live categories, trending signals, and keyword clusters pulled into one social discovery floor.";
+      return;
+    }
+
+    subtitleEl.textContent = "Ordered using your recent searches, hashtag trails, and live category momentum.";
+    signalsEl.hidden = false;
+    signalsEl.innerHTML = bits
+      .map(
+        (bit) => `
+          <span class="search-explore__signal search-explore__signal--${window.ClashlyUtils.escapeHtml(bit.kind)}">
+            ${window.ClashlyUtils.escapeHtml(bit.label)}
+          </span>
+        `
+      )
+      .join("");
+  }
+
+  function renderExploreCategories(categories, signalSummary) {
+    const gridEl = document.getElementById("search-explore-grid");
+    if (!gridEl) return;
+
+    if (!categories.length) {
+      gridEl.hidden = true;
+      gridEl.innerHTML = "";
+      setExploreState("No lanes are available yet.", "");
+      return;
+    }
+
+    const topCategorySlugs = new Set(
+      ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.categories) || []).map((slug) => String(slug || "").toLowerCase())
+    );
+    const topHashtags = new Set(
+      ((signalSummary && signalSummary.topInterests && signalSummary.topInterests.hashtags) || []).map((tag) => String(tag || "").toLowerCase())
+    );
+
+    const ranked = categories
+      .slice()
+      .sort((left, right) => {
+        const scoreDiff = scoreExploreCategory(right, signalSummary) - scoreExploreCategory(left, signalSummary);
+        if (scoreDiff !== 0) return scoreDiff;
+        const countDiff = Number(right.take_count || 0) - Number(left.take_count || 0);
+        if (countDiff !== 0) return countDiff;
+        return (Number(left.sort_order || 0) - Number(right.sort_order || 0));
+      })
+      .slice(0, 8);
+
+    setExploreState("", "");
+    gridEl.hidden = false;
+    gridEl.innerHTML = ranked
+      .map((category, index) => {
+        const theme = getLaneTheme(index);
+        const laneSignal = summarizeLaneSignal(category, topCategorySlugs, topHashtags);
+        const keywords = Array.isArray(category.keywords) ? category.keywords.slice(0, 4) : [];
+        const trendingMatches = currentTrendingTopics
+          .map((topic) => String(topic.tag || "").toLowerCase())
+          .filter((tag) => keywords.map((keyword) => String(keyword || "").toLowerCase()).includes(tag))
+          .slice(0, 2);
+        const metaTags = [
+          `${Number(category.take_count || 0)} ${Number(category.take_count || 0) === 1 ? "take" : "takes"}`,
+          ...trendingMatches.map((tag) => `#${tag}`),
+        ].slice(0, 3);
+
+        return `
+          <article
+            class="search-explore-card"
+            style="--lane-accent:${theme.accent};--lane-glow:${theme.glow};--lane-surface:${theme.surface};"
+          >
+            <div class="search-explore-card__wash" aria-hidden="true"></div>
+            <header class="search-explore-card__head">
+              <div class="search-explore-card__eyebrow-row">
+                <p class="search-explore-card__eyebrow">${window.ClashlyUtils.escapeHtml(laneSignal.eyebrow)}</p>
+                <span class="search-explore-card__slug">/${window.ClashlyUtils.escapeHtml(category.slug)}</span>
+              </div>
+              <h3 class="search-explore-card__title">
+                <a href="${toCategoryHref(category.slug)}">${window.ClashlyUtils.escapeHtml(category.name)}</a>
+              </h3>
+              <p class="search-explore-card__description">${window.ClashlyUtils.escapeHtml(category.description)}</p>
+            </header>
+
+            <div class="search-explore-card__social">
+              <div class="search-explore-card__orbs">${getKeywordOrbs(keywords)}</div>
+              <p class="search-explore-card__social-copy">${window.ClashlyUtils.escapeHtml(laneSignal.note)}</p>
+            </div>
+
+            <div class="search-explore-card__meta">
+              ${metaTags
+                .map(
+                  (tag) => `
+                    <span class="search-explore-card__meta-pill">${window.ClashlyUtils.escapeHtml(tag)}</span>
+                  `
+                )
+                .join("")}
+            </div>
+
+            <div class="search-explore-card__chips">
+              ${keywords
+                .map(
+                  (keyword) => `
+                    <a class="search-explore-card__chip" href="search.html?q=${encodeURIComponent(keyword)}">
+                      ${window.ClashlyUtils.escapeHtml(`#${keyword}`)}
+                    </a>
+                  `
+                )
+                .join("")}
+            </div>
+
+            <footer class="search-explore-card__footer">
+              <span class="search-explore-card__stat">${window.ClashlyUtils.escapeHtml(
+                `${Number(category.take_count || 0)} live ${Number(category.take_count || 0) === 1 ? "post" : "posts"}`
+              )}</span>
+              <a class="search-explore-card__cta" href="${toCategoryHref(category.slug)}">Enter lane</a>
+            </footer>
+          </article>
+        `;
+      })
+      .join("");
   }
 
   function renderAvatar(user) {
@@ -191,6 +429,7 @@
     }
 
     setTrendingState("", "");
+    currentTrendingTopics = topics.slice();
     gridEl.hidden = false;
     gridEl.innerHTML = topics
       .map((topic, index) => {
@@ -260,7 +499,58 @@
         gridEl.hidden = true;
         gridEl.innerHTML = "";
       }
+      currentTrendingTopics = [];
       setTrendingState(message, "error");
+    }
+  }
+
+  async function loadExploreLanes() {
+    if (!window.ClashlyCategories) return;
+
+    const gridEl = document.getElementById("search-explore-grid");
+    if (gridEl && typeof window.clasheShowExploreSkeleton === "function") {
+      window.clasheShowExploreSkeleton("search-explore-grid", 4);
+      gridEl.hidden = false;
+    }
+
+    setExploreState("", "");
+
+    try {
+      const [categoriesResult] = await Promise.all([
+        window.ClashlyCategories.fetchCategories(),
+        currentUserId && window.ClashePersonalization
+          ? window.ClashePersonalization.hydrateUserState(currentUserId)
+          : Promise.resolve(null),
+      ]);
+
+      if (categoriesResult.error) {
+        throw categoriesResult.error;
+      }
+
+      const signalSummary =
+        currentUserId && window.ClashePersonalization
+          ? window.ClashePersonalization.getSignalSummary(currentUserId)
+          : {
+              hasSignals: false,
+              topInterests: {
+                categories: [],
+                hashtags: [],
+              },
+            };
+
+      renderExploreSignals(categoriesResult.categories || [], signalSummary);
+      renderExploreCategories(categoriesResult.categories || [], signalSummary);
+    } catch (error) {
+      const message = window.ClashlyUtils.reportError(
+        "Explore lanes load failed.",
+        error,
+        "Could not load explore lanes right now."
+      );
+      if (gridEl) {
+        gridEl.hidden = true;
+        gridEl.innerHTML = "";
+      }
+      setExploreState(message, "error");
     }
   }
 
@@ -489,7 +779,8 @@
 
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
-      await Promise.all([loadTrendingTopics(), loadResults()]);
+      await loadTrendingTopics();
+      await Promise.all([loadResults(), loadExploreLanes()]);
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
