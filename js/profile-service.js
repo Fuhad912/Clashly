@@ -34,7 +34,7 @@
     const client = getClientOrThrow();
     const { data, error } = await client
       .from(PROFILES_TABLE)
-      .select("id, username, bio, date_of_birth, gender, avatar_url, created_at")
+      .select("id, username, bio, date_of_birth, gender, avatar_url, created_at, onboarding_seen")
       .eq("id", userId)
       .maybeSingle();
 
@@ -137,6 +137,29 @@
     return { profile: data, error };
   }
 
+
+  async function hasSeenOnboardingInDb(userId) {
+    const client = getClientOrThrow();
+    const { data, error } = await client
+      .from(PROFILES_TABLE)
+      .select("onboarding_seen")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !data) return { seen: false, error };
+    return { seen: Boolean(data.onboarding_seen), error: null };
+  }
+
+  async function markOnboardingSeenInDb(userId) {
+    const client = getClientOrThrow();
+    const { error } = await client
+      .from(PROFILES_TABLE)
+      .update({ onboarding_seen: true })
+      .eq("id", userId);
+
+    return { error };
+  }
+
   window.ClashlyProfiles = {
     PROFILES_TABLE,
     AVATAR_BUCKET,
@@ -149,5 +172,7 @@
     isUsernameAvailable,
     uploadAvatar,
     upsertProfile,
+    hasSeenOnboardingInDb,
+    markOnboardingSeenInDb,
   };
 })();
