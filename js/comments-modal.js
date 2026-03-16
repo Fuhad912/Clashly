@@ -24,6 +24,10 @@
     return window.matchMedia("(min-width: 980px)").matches;
   }
 
+  function isMobileViewport() {
+    return window.matchMedia("(max-width: 640px)").matches;
+  }
+
   function getDrawer() {
     return document.getElementById(DRAWER_ID);
   }
@@ -149,6 +153,40 @@
     if (!form || !input) return;
     const shouldExpand = document.activeElement === input || Boolean(input.value.trim()) || Boolean(activeReplyTarget);
     form.classList.toggle("comment-compose--expanded", shouldExpand);
+  }
+
+  function syncKeyboardOffset() {
+    const drawer = getDrawer();
+    if (!drawer) return;
+
+    if (drawer.hidden || !isMobileViewport()) {
+      drawer.style.setProperty("--comments-keyboard-offset", "0px");
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      drawer.style.setProperty("--comments-keyboard-offset", "0px");
+      return;
+    }
+
+    const keyboardOffset = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+    drawer.style.setProperty("--comments-keyboard-offset", `${keyboardOffset}px`);
+  }
+
+  function keepComposerVisible() {
+    const drawer = getDrawer();
+    const input = getEl("comments-drawer-input");
+    if (!drawer || drawer.hidden || !input) return;
+    if (document.activeElement !== input) return;
+
+    syncKeyboardOffset();
+    window.requestAnimationFrame(() => {
+      input.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+      });
+    });
   }
 
   function setReplyTarget(commentId, username) {
@@ -576,6 +614,7 @@
     document.body.style.overflow = "hidden";
     requestAnimationFrame(() => {
       drawer.classList.add("is-open");
+      syncKeyboardOffset();
     });
   }
 
@@ -596,6 +635,7 @@
     dragState.currentY = 0;
     resetComposer();
     drawer.classList.remove("is-open");
+    drawer.style.setProperty("--comments-keyboard-offset", "0px");
     document.body.style.overflow = "";
     window.setTimeout(() => {
       drawer.hidden = true;
@@ -699,6 +739,7 @@
       updateCountLabel();
       autoSizeInput();
       syncComposerExpandedState();
+      syncKeyboardOffset();
     } catch (error) {
       setDrawerState(window.ClashlyUtils.reportError("Comments drawer open failed.", error, "Could not load comments."), "error");
     }
@@ -783,25 +824,42 @@
       updateCountLabel();
       autoSizeInput();
       syncComposerExpandedState();
+      keepComposerVisible();
     });
 
     document.addEventListener("focusin", (event) => {
       if (event.target instanceof HTMLElement && event.target.id === "comments-drawer-input") {
         syncComposerExpandedState();
+        window.setTimeout(keepComposerVisible, 120);
       }
     });
 
     document.addEventListener("focusout", (event) => {
       if (event.target instanceof HTMLElement && event.target.id === "comments-drawer-input") {
-        window.setTimeout(syncComposerExpandedState, 0);
+        window.setTimeout(() => {
+          syncComposerExpandedState();
+          syncKeyboardOffset();
+        }, 0);
       }
     });
 
     window.addEventListener("resize", () => {
       const drawer = getDrawer();
       if (!drawer || drawer.hidden || !currentTake) return;
+      syncKeyboardOffset();
       renderTake();
     });
+
+    if (window.visualViewport) {
+      const handleViewportChange = () => {
+        const drawer = getDrawer();
+        if (!drawer || drawer.hidden) return;
+        syncKeyboardOffset();
+        keepComposerVisible();
+      };
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    }
   }
 
   function boot() {
