@@ -105,39 +105,67 @@
 
   /* Actions */
   .take-item__actions-top {
-    gap: 10px;
-  }
-
-  .take-item__actions {
-    gap: 3px;
-  }
-
-  .take-action {
-    min-height: 38px;
-    min-width: 40px;
-    padding: 0 9px;
-  }
-
-  .take-action--vote {
-    min-width: 74px;
-    height: 38px;
-    min-height: 38px;
-    padding: 0 6px;
-    font-size: 0.74rem;
-  }
-
-  .take-action--vote .take-action__stack {
+    flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
   }
 
+  .take-item__actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 4px;
+  }
+
+  .take-action {
+    min-height: 36px;
+    min-width: 36px;
+    padding: 0 7px;
+  }
+
+  .take-action svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .take-action--vote {
+    min-width: 66px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+  }
+
+  .take-action--agree,
+  .take-action--disagree {
+    min-width: 66px;
+  }
+
+  .take-action--vote .take-action__stack {
+    gap: 4px;
+  }
+
   .take-action--vote .take-action__count {
-    font-size: 0.76rem;
+    font-size: 0.72rem;
   }
 
   .take-action--vote .take-action__label {
-    display: inline-flex;
-    font-size: 0.54rem;
-    letter-spacing: 0.03em;
+    display: none;
+  }
+
+  .take-action--judge {
+    min-width: 74px;
+    padding: 0 8px;
+    font-size: 0.62rem;
+  }
+
+  .take-action--judge .take-action__icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .take-item__save-action {
+    margin-left: 0;
   }
 
   .take-vote-split {
@@ -394,9 +422,7 @@
   }
 
   .take-action--vote .take-action__label {
-    display: inline-flex;
-    font-size: 0.5rem;
-    letter-spacing: 0.02em;
+    display: none;
   }
 
   .profile-head__hero {
