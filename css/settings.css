@@ -107,6 +107,22 @@
   cursor: not-allowed;
 }
 
+.settings-btn--install {
+  min-width: 136px;
+  justify-content: center;
+  text-align: center;
+}
+
+#settings-install-status {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .settings-row--action #settings-install-trigger {
+    width: 100%;
+  }
+}
+
 .settings-card--danger {
   border-color: color-mix(in srgb, var(--color-disagree) 35%, var(--color-border));
 }
