@@ -823,6 +823,10 @@
   background: transparent;
 }
 
+#search-takes-stream .take-item--toggleable {
+  cursor: pointer;
+}
+
 #search-takes-stream .take-item::before {
   content: "";
   position: absolute;
@@ -853,7 +857,11 @@
 
 #search-takes-stream .take-item__open {
   margin-left: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-text);
+  cursor: pointer;
 }
 
 #search-takes-stream .take-item__text {
@@ -862,7 +870,7 @@
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 3;
 }
 
 #search-takes-stream .take-item__media {
@@ -880,9 +888,14 @@
 }
 
 #search-takes-stream .take-item__actions-wrapper {
+  display: none;
   margin-top: 16px;
   padding-top: 14px;
   border-top: var(--line);
+}
+
+#search-takes-stream .take-item__media {
+  display: none;
 }
 
 #search-takes-stream .take-item__actions-top {
@@ -908,6 +921,17 @@
 
 #search-takes-stream .take-ai-judge {
   display: none;
+}
+
+#search-takes-stream .take-item.is-expanded .take-item__text {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+#search-takes-stream .take-item.is-expanded .take-item__media,
+#search-takes-stream .take-item.is-expanded .take-item__actions-wrapper {
+  display: block;
 }
 
 #search-takes-stream .take-vote-split,
