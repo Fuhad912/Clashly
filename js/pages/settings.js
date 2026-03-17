@@ -4,6 +4,18 @@
   let deleteInFlight = false;
   let unsubscribePwaState = null;
 
+  function setEmailFormDisabled(isDisabled) {
+    const input = document.getElementById("settings-new-email");
+    const submitBtn = document.getElementById("settings-email-submit");
+
+    if (input instanceof HTMLInputElement) {
+      input.disabled = Boolean(isDisabled);
+    }
+    if (submitBtn instanceof HTMLButtonElement) {
+      submitBtn.disabled = Boolean(isDisabled);
+    }
+  }
+
   function normalizeEmail(email) {
     return String(email || "").trim().toLowerCase();
   }
@@ -250,6 +262,14 @@
     submitBtn.textContent = "Sending...";
 
     try {
+      const currentUserResult = await window.ClashlyAuth.getCurrentUser();
+      if (currentUserResult.error) {
+        throw currentUserResult.error;
+      }
+      if (!window.ClashlyAuth.canChangeEmail(currentUserResult.user)) {
+        throw new Error("Only Google-created accounts can change email address here.");
+      }
+
       const result = await window.ClashlyAuth.updateEmail(nextEmail);
       if (result.error) {
         throw result.error;
@@ -325,8 +345,30 @@
         emailEl.textContent = currentUserEmail || "Unknown account";
       }
 
+      let currentAuthUser = user;
+      if (window.ClashlyAuth && typeof window.ClashlyAuth.getCurrentUser === "function") {
+        try {
+          const currentUserResult = await window.ClashlyAuth.getCurrentUser();
+          if (!currentUserResult.error && currentUserResult.user) {
+            currentAuthUser = currentUserResult.user;
+          }
+        } catch (_error) {
+          // Fall back to the session user object.
+        }
+      }
+
+      const canChangeEmail = window.ClashlyAuth && typeof window.ClashlyAuth.canChangeEmail === "function"
+        ? window.ClashlyAuth.canChangeEmail(currentAuthUser)
+        : false;
+      setEmailFormDisabled(!canChangeEmail);
+      if (!canChangeEmail) {
+        setEmailStatus("Only Google-created accounts can change email address here.", "error");
+      } else {
+        setEmailStatus("", "");
+      }
+
       const emailForm = document.getElementById("settings-email-form");
-      if (emailForm) {
+      if (emailForm && canChangeEmail) {
         emailForm.addEventListener("submit", handleEmailChangeSubmit);
       }
 
