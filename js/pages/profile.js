@@ -1038,6 +1038,7 @@
           actorId: currentUser.id,
           type: "bookmark",
           targetId: target.id,
+          targetTakeId: target.id,
         }).catch(() => {});
       }
 
