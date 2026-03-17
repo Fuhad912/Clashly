@@ -95,6 +95,14 @@
     });
   }
 
+  function syncCategoryTakeState(takeId) {
+    const feedEl = document.getElementById("category-feed-stream");
+    if (!feedEl || !window.ClashlyTakeRenderer || typeof window.ClashlyTakeRenderer.syncTakeState !== "function") return;
+    const targetTake = currentFeedTakes.find((take) => take.id === takeId) || null;
+    if (!targetTake) return;
+    window.ClashlyTakeRenderer.syncTakeState(feedEl, targetTake);
+  }
+
   function handleCommentsOpen(input) {
     if (!window.ClashlyCommentsModal) {
       window.location.href = `take.html?id=${encodeURIComponent(input.takeId)}`;
@@ -132,16 +140,20 @@
 
     const target = currentFeedTakes.find((take) => take.id === input.takeId);
     if (!target || target.vote_loading) return;
+    const previousVote = target.vote ? { ...target.vote } : null;
+    const optimisticVote = window.ClashlyTakes && typeof window.ClashlyTakes.previewVoteSummary === "function"
+      ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
+      : previousVote;
 
-    updateTakeVoteState(input.takeId, { vote_loading: true });
-    renderFeed();
+    updateTakeVoteState(input.takeId, { vote_loading: true, vote: optimisticVote || target.vote });
+    syncCategoryTakeState(input.takeId);
 
     try {
       const voteResult = await window.ClashlyTakes.submitVote({
         userId: currentUserId,
         takeId: input.takeId,
         voteType: input.voteType,
-        currentVote: target.vote ? target.vote.user_vote : "",
+        currentVote: previousVote ? previousVote.user_vote : "",
       });
 
       if (voteResult.error) {
@@ -152,11 +164,14 @@
         vote_loading: false,
         vote: voteResult.vote,
       });
-      renderFeed();
+      syncCategoryTakeState(input.takeId);
       setFeedState("", "");
     } catch (error) {
-      updateTakeVoteState(input.takeId, { vote_loading: false });
-      renderFeed();
+      updateTakeVoteState(input.takeId, {
+        vote_loading: false,
+        vote: previousVote || target.vote,
+      });
+      syncCategoryTakeState(input.takeId);
       throw error;
     }
   }
@@ -171,6 +186,9 @@
     }
 
     const target = currentFeedTakes.find((take) => take.id === input.takeId) || null;
+    const previousBookmarked = Boolean(target && target.bookmarked);
+    updateTakeBookmarkState(input.takeId, !previousBookmarked);
+    syncCategoryTakeState(input.takeId);
     const result = await window.ClashlyTakes.toggleBookmark({
       userId: currentUserId,
       takeId: input.takeId,
@@ -178,6 +196,8 @@
     });
 
     if (result.error) {
+      updateTakeBookmarkState(input.takeId, previousBookmarked);
+      syncCategoryTakeState(input.takeId);
       throw result.error;
     }
 
@@ -192,7 +212,7 @@
     }
 
     updateTakeBookmarkState(input.takeId, result.bookmarked);
-    renderFeed();
+    syncCategoryTakeState(input.takeId);
     setFeedState("", "");
   }
 
