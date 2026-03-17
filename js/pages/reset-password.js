@@ -170,7 +170,7 @@
           throw currentUserResult.error;
         }
         if (!window.ClashlyAuth.canChangePassword(currentUserResult.user)) {
-          throw new Error("Only email/password accounts can change password here.");
+          throw new Error("Only accounts created with a Gmail address and password can change password here.");
         }
 
         const updateResult = await window.ClashlyAuth.updatePassword(password);
@@ -206,7 +206,7 @@
         throw currentUserResult.error;
       }
       if (!window.ClashlyAuth.canChangePassword(currentUserResult.user)) {
-        setStatus("Only email/password accounts can change password here.", "error");
+        setStatus("Only accounts created with a Gmail address and password can change password here.", "error");
         return;
       }
 
