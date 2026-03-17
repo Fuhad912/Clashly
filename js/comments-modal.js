@@ -293,6 +293,49 @@
     });
   }
 
+  function syncTakeState() {
+    const streamEl = getEl("comments-drawer-take");
+    if (!streamEl || !currentTake || !window.ClashlyTakeRenderer || typeof window.ClashlyTakeRenderer.syncTakeState !== "function") return;
+    window.ClashlyTakeRenderer.syncTakeState(streamEl, currentTake);
+  }
+
+  function escapeCommentSelector(commentId) {
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(String(commentId || ""));
+    }
+    return String(commentId || "").replace(/"/g, '\\"');
+  }
+
+  function syncCommentLikeButton(commentId, isDisabled) {
+    const threadEl = getEl("comments-drawer-thread");
+    const targetComment = findCommentById(currentComments, commentId);
+    if (!threadEl || !targetComment) return;
+
+    const likeButton = threadEl.querySelector(
+      `[data-comment-id="${escapeCommentSelector(commentId)}"] [data-action='toggle-like-comment']`
+    );
+    if (!(likeButton instanceof HTMLElement)) return;
+
+    const likedByMe = Boolean(targetComment.liked_by_me);
+    const likeCount = Math.max(0, Number(targetComment.like_count || 0));
+    const likeLabel = likedByMe ? "Unlike comment" : "Like comment";
+    likeButton.classList.toggle("is-active", likedByMe);
+    likeButton.setAttribute("data-liked", likedByMe ? "true" : "false");
+    likeButton.setAttribute("aria-pressed", likedByMe ? "true" : "false");
+    likeButton.setAttribute("aria-label", likeLabel);
+    likeButton.setAttribute("title", likeLabel);
+    if (isDisabled) {
+      likeButton.setAttribute("disabled", "true");
+    } else {
+      likeButton.removeAttribute("disabled");
+    }
+
+    const countEl = likeButton.querySelector(".comment-action__count");
+    if (countEl) {
+      countEl.textContent = likeCount.toLocaleString();
+    }
+  }
+
   function findCommentById(items, commentId) {
     for (const item of items || []) {
       if (item.id === commentId) return item;
@@ -309,7 +352,7 @@
       liked,
       delta,
     });
-    renderComments();
+    syncCommentLikeButton(commentId);
   }
 
   async function loadComments() {
@@ -353,15 +396,24 @@
     }
 
     if (!currentTake || currentTake.vote_loading) return;
-    currentTake = { ...currentTake, vote_loading: true };
-    renderTake();
+    const previousVote = currentTake.vote || null;
+    const optimisticVote =
+      window.ClashlyTakes && typeof window.ClashlyTakes.previewVoteSummary === "function"
+        ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
+        : previousVote;
+    currentTake = {
+      ...currentTake,
+      vote_loading: true,
+      vote: optimisticVote || currentTake.vote,
+    };
+    syncTakeState();
 
     try {
       const voteResult = await window.ClashlyTakes.submitVote({
         userId: currentUserId,
         takeId: input.takeId,
         voteType: input.voteType,
-        currentVote: currentTake.vote ? currentTake.vote.user_vote : "",
+        currentVote: previousVote ? previousVote.user_vote : "",
       });
 
       if (voteResult.error) throw voteResult.error;
@@ -371,7 +423,7 @@
         vote_loading: false,
         vote: voteResult.vote,
       };
-      renderTake();
+      syncTakeState();
       setDrawerState("", "");
       window.dispatchEvent(
         new CustomEvent(UPDATE_EVENT, {
@@ -382,8 +434,12 @@
         })
       );
     } catch (error) {
-      currentTake = { ...currentTake, vote_loading: false };
-      renderTake();
+      currentTake = {
+        ...currentTake,
+        vote_loading: false,
+        vote: previousVote,
+      };
+      syncTakeState();
       throw error;
     }
   }
@@ -399,6 +455,13 @@
 
     if (!currentTake) return;
 
+    const previousBookmarked = Boolean(currentTake.bookmarked);
+    currentTake = {
+      ...currentTake,
+      bookmarked: !previousBookmarked,
+    };
+    syncTakeState();
+
     const result = await window.ClashlyTakes.toggleBookmark({
       userId: currentUserId,
       takeId: input.takeId,
@@ -406,6 +469,11 @@
     });
 
     if (result.error) {
+      currentTake = {
+        ...currentTake,
+        bookmarked: previousBookmarked,
+      };
+      syncTakeState();
       throw result.error;
     }
 
@@ -423,7 +491,7 @@
       ...currentTake,
       bookmarked: result.bookmarked,
     };
-    renderTake();
+    syncTakeState();
     setDrawerState("", "");
     window.dispatchEvent(
       new CustomEvent(BOOKMARK_UPDATE_EVENT, {
@@ -552,7 +620,11 @@
       }
 
       const wasLiked = likeButton.getAttribute("data-liked") === "true";
+      const optimisticLiked = !wasLiked;
+      const optimisticDelta = wasLiked ? -1 : 1;
       likeButton.setAttribute("disabled", "true");
+      applyCommentLikeState(commentId, optimisticLiked, optimisticDelta);
+      syncCommentLikeButton(commentId, true);
       try {
         const likeResult = await window.ClashlyComments.toggleCommentLike({
           commentId,
@@ -562,7 +634,11 @@
 
         if (likeResult.error) throw likeResult.error;
 
-        applyCommentLikeState(commentId, likeResult.liked, likeResult.delta);
+        const likeDeltaAdjustment = Number(likeResult.delta || 0) - optimisticDelta;
+        if (likeResult.liked !== optimisticLiked || likeDeltaAdjustment !== 0) {
+          applyCommentLikeState(commentId, likeResult.liked, likeDeltaAdjustment);
+        }
+        syncCommentLikeButton(commentId, false);
         setDrawerState("", "");
 
         if (
@@ -582,7 +658,8 @@
           }).catch(() => {});
         }
       } catch (error) {
-        likeButton.removeAttribute("disabled");
+        applyCommentLikeState(commentId, wasLiked, -optimisticDelta);
+        syncCommentLikeButton(commentId, false);
         setDrawerState(window.ClashlyUtils.reportError("Comment like toggle failed.", error, "Could not update comment like."), "error");
       }
       return;
