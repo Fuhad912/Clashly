@@ -498,6 +498,81 @@
     container.innerHTML = takes.map((take) => renderGridItem(take, safeOptions)).join("");
   }
 
+  function escapeAttributeSelector(value) {
+    const safeValue = String(value || "");
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(safeValue);
+    }
+    return safeValue.replace(/"/g, '\\"');
+  }
+
+  function getTakeElements(rootEl, takeId) {
+    if (!rootEl || !takeId) return [];
+    const selector = `[data-take-id="${escapeAttributeSelector(takeId)}"]`;
+    if (rootEl instanceof Element && rootEl.matches(selector)) {
+      return [rootEl];
+    }
+    if (typeof rootEl.querySelectorAll !== "function") return [];
+    return Array.from(rootEl.querySelectorAll(selector));
+  }
+
+  function syncVoteButton(button, isSelected, count, isDisabled) {
+    if (!(button instanceof HTMLElement)) return;
+    button.classList.toggle("is-selected", isSelected);
+    button.disabled = Boolean(isDisabled);
+    const countEl = button.querySelector(".take-action__count");
+    if (countEl) {
+      countEl.textContent = String(Number(count || 0));
+    }
+  }
+
+  function syncBookmarkButton(button, isBookmarked) {
+    if (!(button instanceof HTMLElement)) return;
+    const bookmarkLabel = isBookmarked ? "Saved" : "Save";
+    button.classList.toggle("is-selected", Boolean(isBookmarked));
+    button.setAttribute("data-bookmarked", isBookmarked ? "true" : "false");
+    button.setAttribute("aria-label", `${bookmarkLabel} take`);
+    button.setAttribute("title", `${bookmarkLabel} take`);
+  }
+
+  function syncVoteMeta(item, voteData) {
+    const metaEl = item.querySelector(".take-vote-meta");
+    if (!metaEl) return;
+    if (!voteData.totalVotes) {
+      metaEl.textContent = "No votes yet";
+      return;
+    }
+    metaEl.textContent = `Agree ${voteData.agreePct}% · Disagree ${voteData.disagreePct}% · ${voteData.totalVotes} votes`;
+  }
+
+  function syncVoteSplit(item, voteData) {
+    const agreeEl = item.querySelector(".take-vote-split__agree");
+    const disagreeEl = item.querySelector(".take-vote-split__disagree");
+    if (agreeEl) {
+      agreeEl.style.width = `${voteData.totalVotes ? voteData.agreePct : 50}%`;
+    }
+    if (disagreeEl) {
+      disagreeEl.style.width = `${voteData.totalVotes ? voteData.disagreePct : 50}%`;
+    }
+  }
+
+  function syncTakeState(rootEl, take) {
+    if (!rootEl || !take || !take.id) return;
+    const voteData = getVoteData(take);
+    const takeItems = getTakeElements(rootEl, take.id);
+    takeItems.forEach((item) => {
+      const agreeButton = item.querySelector("[data-action='vote'][data-vote-type='agree']");
+      const disagreeButton = item.querySelector("[data-action='vote'][data-vote-type='disagree']");
+      const bookmarkButton = item.querySelector("[data-action='bookmark']");
+
+      syncVoteButton(agreeButton, voteData.userVote === "agree", voteData.agreeCount, voteData.isLoading);
+      syncVoteButton(disagreeButton, voteData.userVote === "disagree", voteData.disagreeCount, voteData.isLoading);
+      syncBookmarkButton(bookmarkButton, Boolean(take.bookmarked));
+      syncVoteSplit(item, voteData);
+      syncVoteMeta(item, voteData);
+    });
+  }
+
   function bindShareActions(rootEl, handlers) {
     if (!rootEl) return;
 
@@ -643,6 +718,7 @@
   window.ClashlyTakeRenderer = {
     renderTakeList,
     renderTakeGrid,
+    syncTakeState,
     bindShareActions,
     bindVoteActions,
     bindCommentActions,
