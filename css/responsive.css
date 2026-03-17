@@ -40,30 +40,24 @@
   }
 
   .home-head__bar {
-    grid-template-columns: 44px minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 10px var(--space-3) 6px;
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
+    gap: 6px;
+    padding: 6px var(--space-3) 4px;
   }
 
-  .home-head__identity {
-    width: 40px;
-    height: 40px;
-  }
-
-  .home-head__avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 0.72rem;
+  .home-head__spacer {
+    width: 28px;
+    height: 28px;
   }
 
   .home-head__brand {
-    width: 64px;
-    height: 38px;
+    width: 58px;
+    height: 30px;
   }
 
   .home-head__utility {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
   }
 
   body[data-page="home"] .feed-head__inner {
@@ -71,9 +65,9 @@
   }
 
   .home-switch__btn {
-    min-height: 64px;
-    padding: 6px 12px 14px;
-    font-size: clamp(1rem, 0.9rem + 1vw, 1.35rem);
+    min-height: 48px;
+    padding: 5px 12px 10px;
+    font-size: clamp(0.96rem, 0.88rem + 0.7vw, 1.15rem);
   }
 
   .feed-state,
@@ -713,25 +707,20 @@
   }
 
   .home-head__bar {
-    grid-template-columns: 52px minmax(0, 1fr) auto;
-    gap: 12px;
-    padding: 12px var(--space-4) 8px;
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    gap: 8px;
+    padding: 6px var(--space-4) 4px;
   }
 
-  .home-head__identity {
-    width: 48px;
-    height: 48px;
-  }
-
-  .home-head__avatar {
-    width: 42px;
-    height: 42px;
+  .home-head__spacer {
+    width: 32px;
+    height: 32px;
   }
 
   .home-head__brand {
     display: inline-flex;
-    width: 72px;
-    height: 42px;
+    width: 64px;
+    height: 34px;
   }
 
   .home-head__utility {
@@ -739,8 +728,9 @@
   }
 
   .home-switch__btn {
-    min-height: 78px;
-    font-size: clamp(1.25rem, 1rem + 0.7vw, 1.8rem);
+    min-height: 56px;
+    padding: 6px 16px 12px;
+    font-size: clamp(1rem, 0.92rem + 0.45vw, 1.3rem);
   }
 
   .theme-toggle {
@@ -752,19 +742,6 @@
 /* ── Wide: 1200px + ────────────────────────────────────────── */
 
 @media (min-width: 1200px) {
-  .app-main--home {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: var(--space-5);
-    align-items: start;
-  }
-
-  .side-column {
-    display: block;
-    position: sticky;
-    top: var(--space-4);
-  }
-
   .profile-feed--grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
