@@ -15,6 +15,18 @@
     <script src="js/pwa-capture.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/loader.js"></script>
+    <script>
+      (function () {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("from") === "search") {
+            document.documentElement.classList.add("take-page--from-search");
+          }
+        } catch (_error) {
+          // Ignore malformed URLs and continue with the default take layout.
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="assets/clashly-favicon.svg?v=20260311a" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="assets/pwa-192.png" />
