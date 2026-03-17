@@ -143,6 +143,12 @@
     }
   }
 
+  function setExploreVisibility(isVisible) {
+    const exploreEl = document.getElementById("search-explore");
+    if (!exploreEl) return;
+    exploreEl.hidden = !isVisible;
+  }
+
   function setTrendingState(message, type) {
     const stateEl = document.getElementById("search-trending-state");
     if (!stateEl) return;
@@ -500,7 +506,7 @@
       hideCommentsAction: true,
       showAiJudgeAction: true,
       hideInlineAiJudgeResult: true,
-      showOpenLink: true,
+      showOpenLink: false,
       toggleOpenAction: true,
       expandedTakeId,
       emptyMessage: "No matching takes.",
@@ -657,6 +663,10 @@
 
   async function loadExploreLanes() {
     if (!window.ClashlyCategories) return;
+    if (currentQuery) {
+      setExploreVisibility(false);
+      return;
+    }
 
     const gridEl = document.getElementById("search-explore-grid");
     if (gridEl && typeof window.clasheShowExploreSkeleton === "function") {
@@ -943,6 +953,7 @@
     expandedTakeId = currentQuery ? getExpandedTakeQuery() : "";
     updateHeader();
     setDiscoveryVisibility(!currentQuery);
+    setExploreVisibility(!currentQuery);
 
     if (!currentQuery) {
       renderRecentSearches();
