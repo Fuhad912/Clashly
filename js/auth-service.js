@@ -145,6 +145,37 @@
     };
   }
 
+  function getUserProviders(user) {
+    const providers = new Set();
+
+    if (user && user.app_metadata && typeof user.app_metadata.provider === "string") {
+      providers.add(user.app_metadata.provider.toLowerCase());
+    }
+
+    if (user && user.app_metadata && Array.isArray(user.app_metadata.providers)) {
+      user.app_metadata.providers.forEach((provider) => {
+        if (typeof provider === "string" && provider.trim()) {
+          providers.add(provider.toLowerCase());
+        }
+      });
+    }
+
+    if (user && Array.isArray(user.identities)) {
+      user.identities.forEach((identity) => {
+        if (identity && typeof identity.provider === "string" && identity.provider.trim()) {
+          providers.add(identity.provider.toLowerCase());
+        }
+      });
+    }
+
+    return Array.from(providers);
+  }
+
+  function canChangePassword(user) {
+    const providers = getUserProviders(user);
+    return providers.includes("email");
+  }
+
   function onAuthStateChange(callback) {
     const client = getClientOrThrow();
     return client.auth.onAuthStateChange(callback);
@@ -166,6 +197,8 @@
     exchangeCodeForSession,
     getSession,
     getCurrentUser,
+    getUserProviders,
+    canChangePassword,
     onAuthStateChange,
   };
 })();
