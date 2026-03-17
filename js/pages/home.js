@@ -5,6 +5,7 @@
   const AI_JUDGE_MIN_COMMENTS = 6;
   let activeSection = "for-you";
   let currentUserId = "";
+  let currentProfile = null;
   let scrollQueued = false;
   const sectionState = {
     "for-you": {
@@ -130,6 +131,50 @@
   function setActiveSection(nextSection) {
     activeSection = nextSection === "following" ? "following" : "for-you";
     updateHeader();
+  }
+
+  function renderHomeHeaderProfile() {
+    const profileLinkEl = document.getElementById("home-head-profile-link");
+    const avatarEl = document.getElementById("home-head-avatar");
+    if (!profileLinkEl || !avatarEl) return;
+
+    const username = currentProfile && currentProfile.username ? String(currentProfile.username) : "";
+    const params = new URLSearchParams();
+    if (currentUserId) params.set("id", currentUserId);
+    if (username) params.set("u", username);
+    profileLinkEl.href = params.toString() ? `profile.html?${params.toString()}` : "profile.html";
+
+    if (currentProfile && currentProfile.avatar_url) {
+      avatarEl.innerHTML = `<img src="${window.ClashlyUtils.escapeHtml(currentProfile.avatar_url)}" alt="@${window.ClashlyUtils.escapeHtml(
+        username || "profile"
+      )} avatar" />`;
+      return;
+    }
+
+    avatarEl.innerHTML = "";
+    avatarEl.textContent = window.ClashlyProfiles && typeof window.ClashlyProfiles.initialsFromUsername === "function"
+      ? window.ClashlyProfiles.initialsFromUsername(username || "cl")
+      : "CL";
+  }
+
+  function bindHomeHeaderActions() {
+    const upgradeBtn = document.getElementById("home-head-upgrade");
+    if (!upgradeBtn) return;
+
+    upgradeBtn.addEventListener("click", async () => {
+      if (window.ClashlyPWA && typeof window.ClashlyPWA.promptInstall === "function") {
+        try {
+          const result = await window.ClashlyPWA.promptInstall();
+          if (result && result.status && result.status !== "unavailable") {
+            return;
+          }
+        } catch (_error) {
+          // Fall back to settings if install prompting is unavailable.
+        }
+      }
+
+      window.location.href = "settings.html";
+    });
   }
 
   function toHashtagHref(tag) {
@@ -693,7 +738,13 @@
       activeSection = getHashSection();
       const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      if (currentUserId && window.ClashlyProfiles && typeof window.ClashlyProfiles.getProfileById === "function") {
+        const profileResult = await window.ClashlyProfiles.getProfileById(currentUserId);
+        currentProfile = profileResult && !profileResult.error ? profileResult.profile || null : null;
+      }
 
+      renderHomeHeaderProfile();
+      bindHomeHeaderActions();
       bindHomeSwitch();
       bindInfiniteScroll();
       bindAiJudgeReasonModal();
