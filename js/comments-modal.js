@@ -243,6 +243,7 @@
     window.ClashlyTakeRenderer.renderTakeList(streamEl, takeForPreview ? [takeForPreview] : [], {
       currentUserId,
       hideCommentsAction: true,
+      hideShareAction: true,
       hideActionRow: true,
     });
 
