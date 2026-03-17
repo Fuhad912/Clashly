@@ -176,6 +176,11 @@
     return providers.includes("email");
   }
 
+  function canChangeEmail(user) {
+    const providers = getUserProviders(user);
+    return providers.includes("google");
+  }
+
   function onAuthStateChange(callback) {
     const client = getClientOrThrow();
     return client.auth.onAuthStateChange(callback);
@@ -199,6 +204,7 @@
     getCurrentUser,
     getUserProviders,
     canChangePassword,
+    canChangeEmail,
     onAuthStateChange,
   };
 })();
