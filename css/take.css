@@ -543,6 +543,10 @@
   color: var(--color-text-muted);
 }
 
+.comment-action__label {
+  display: inline;
+}
+
 .comment-action:hover {
   color: var(--color-text);
   background: transparent;
@@ -610,6 +614,9 @@
 }
 
 .comment-action--icon-plain {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   min-height: 20px;
   padding: 0;
   color: #dc2626;
@@ -622,6 +629,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.comment-action--icon-plain .comment-action__label {
+  font-weight: inherit;
+  line-height: 1;
 }
 
 .comment-action--icon-plain .comment-action__icon svg {
