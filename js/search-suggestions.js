@@ -66,8 +66,13 @@
         <header class="search-suggestions__label">Users</header>
         ${users
           .map(
-            (user) => `
-              <a class="search-suggestions__item" href="profile.html?id=${encodeURIComponent(user.id)}">
+            (user) => {
+              const params = new URLSearchParams();
+              if (user && user.id) params.set("id", user.id);
+              if (user && user.username) params.set("u", user.username);
+              const href = params.toString() ? `profile.html?${params.toString()}` : "profile.html";
+              return `
+              <a class="search-suggestions__item" href="${href}">
                 ${renderUserAvatar(user)}
                 <div class="search-suggestions__content">
                   <strong class="search-suggestions__title">@${window.ClashlyUtils.escapeHtml(user.username)}</strong>
@@ -76,7 +81,8 @@
                   )}</span>
                 </div>
               </a>
-            `
+            `;
+            }
           )
           .join("")}
       </section>
