@@ -70,7 +70,9 @@
     `;
   }
 
-  function renderInlineAiJudgeResult(take) {
+  function renderInlineAiJudgeResult(take, options) {
+    if (options && options.hideInlineAiJudgeResult) return "";
+
     const judgeState = take && take.ai_judge ? take.ai_judge : null;
     if (!judgeState || !judgeState.status) return "";
 
@@ -302,7 +304,7 @@
         </div>
         ${renderVoteSplit(voteData)}
         ${renderVoteMeta(voteData)}
-        ${renderInlineAiJudgeResult(take)}
+        ${renderInlineAiJudgeResult(take, options)}
       </footer>
     `;
   }
@@ -445,6 +447,7 @@
           showAiJudgeAction: Boolean(safeOptions.showAiJudgeAction),
           showDeleteAction: Boolean(safeOptions.showDeleteAction),
           hideActionRow: Boolean(safeOptions.hideActionRow),
+          hideInlineAiJudgeResult: Boolean(safeOptions.hideInlineAiJudgeResult),
           showOpenLink: Boolean(safeOptions.showOpenLink),
         })
       )
