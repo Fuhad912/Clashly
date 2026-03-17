@@ -1182,9 +1182,13 @@
 
       currentUser = userState.user;
       const target = resolveViewedProfileTarget(userState.user.id);
-      const profileState = target.id
+      let profileState = target.id
         ? await window.ClashlyProfiles.getProfileById(target.id)
         : await window.ClashlyProfiles.getProfileByUsername(target.username);
+
+      if ((!profileState || !profileState.profile) && !profileState.error && target.username) {
+        profileState = await window.ClashlyProfiles.getProfileByUsername(target.username);
+      }
 
       if (profileState.error) {
         setMetaStatus("Could not load profile details.", "error");
