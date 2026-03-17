@@ -134,6 +134,7 @@
           title="Delete comment"
         >
           <span class="comment-action__icon" aria-hidden="true">${renderDeleteIcon()}</span>
+          <span class="comment-action__label">Delete</span>
         </button>`
       );
     }
