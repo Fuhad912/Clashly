@@ -323,3 +323,43 @@
   font-weight: 700;
   color: var(--color-text);
 }
+
+@media (max-width: 640px) {
+  .setup-page {
+    background: var(--color-bg);
+  }
+
+  .setup-main {
+    width: 100%;
+    min-height: 100dvh;
+    padding: var(--space-3);
+  }
+
+  .setup-shell {
+    display: block;
+  }
+
+  .setup-brand,
+  .setup-rail,
+  .app-legal-footer {
+    display: none;
+  }
+
+  .setup-panel {
+    width: 100%;
+    padding: var(--space-4);
+  }
+
+  .setup-head {
+    padding-bottom: var(--space-3);
+  }
+
+  .setup-title {
+    font-size: clamp(1.7rem, 6vw, 2.15rem);
+  }
+
+  .setup-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+}
