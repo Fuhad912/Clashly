@@ -105,8 +105,10 @@
     `;
   }
 
-  function renderTakes(takes) {
+  function renderTakes(takes, query) {
     if (!takes.length) return "";
+
+    const safeQuery = String(query || "").trim();
 
     return `
       <section class="search-suggestions__group">
@@ -114,8 +116,11 @@
         ${takes
           .map((take) => {
             const username = take.profile && take.profile.username ? `@${take.profile.username}` : "@anonymous";
+            const href = safeQuery
+              ? `search.html?q=${encodeURIComponent(safeQuery)}&expandTake=${encodeURIComponent(take.id)}`
+              : `search.html?expandTake=${encodeURIComponent(take.id)}`;
             return `
-              <a class="search-suggestions__item search-suggestions__item--take" href="take.html?id=${encodeURIComponent(take.id)}">
+              <a class="search-suggestions__item search-suggestions__item--take" href="${href}">
                 <div class="search-suggestions__content">
                   <strong class="search-suggestions__title">${window.ClashlyUtils.escapeHtml(username)}</strong>
                   <span class="search-suggestions__meta">${window.ClashlyUtils.escapeHtml(truncateText(take.content, 92))}</span>
@@ -160,10 +165,10 @@
       return;
     }
 
-    instance.dropdown.innerHTML = `
+      instance.dropdown.innerHTML = `
       ${renderUsers(users)}
       ${renderHashtags(hashtags)}
-      ${renderTakes(takes)}
+      ${renderTakes(takes, instance.latestQuery)}
     `;
     resetActiveItem(instance);
     show(instance);
