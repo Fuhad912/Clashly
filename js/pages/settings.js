@@ -267,7 +267,7 @@
         throw currentUserResult.error;
       }
       if (!window.ClashlyAuth.canChangeEmail(currentUserResult.user)) {
-        throw new Error("Only Google-created accounts can change email address here.");
+        throw new Error("Only accounts created with a Gmail address and password can change email address here.");
       }
 
       const result = await window.ClashlyAuth.updateEmail(nextEmail);
@@ -362,7 +362,7 @@
         : false;
       setEmailFormDisabled(!canChangeEmail);
       if (!canChangeEmail) {
-        setEmailStatus("Only Google-created accounts can change email address here.", "error");
+        setEmailStatus("Only accounts created with a Gmail address and password can change email address here.", "error");
       } else {
         setEmailStatus("", "");
       }
