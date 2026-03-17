@@ -21,6 +21,17 @@
     }
   }
 
+  function setResetFormDisabled(isDisabled) {
+    const form = document.getElementById("reset-form");
+    if (!form) return;
+
+    form.querySelectorAll("input, [data-toggle-password]").forEach((field) => {
+      if (field instanceof HTMLInputElement || field instanceof HTMLButtonElement) {
+        field.disabled = Boolean(isDisabled);
+      }
+    });
+  }
+
   function initPasswordToggles() {
     const toggleButtons = document.querySelectorAll("[data-toggle-password]");
     if (!toggleButtons.length) return;
@@ -127,6 +138,10 @@
       return "Could not reach Supabase. Check your connection and try again.";
     }
 
+    if (raw && raw !== "Could not update password.") {
+      return raw;
+    }
+
     return window.ClashlyUtils.reportError("Password reset failed.", error, "Could not update password.");
   }
 
@@ -150,6 +165,14 @@
       setSubmitDisabled(true, "Updating...");
 
       try {
+        const currentUserResult = await window.ClashlyAuth.getCurrentUser();
+        if (currentUserResult.error) {
+          throw currentUserResult.error;
+        }
+        if (!window.ClashlyAuth.canChangePassword(currentUserResult.user)) {
+          throw new Error("Only email/password accounts can change password here.");
+        }
+
         const updateResult = await window.ClashlyAuth.updatePassword(password);
         if (updateResult.error) {
           throw updateResult.error;
@@ -172,15 +195,28 @@
 
     initPasswordToggles();
     initResetForm();
+    setResetFormDisabled(true);
 
+    let canSubmit = false;
     setSubmitDisabled(true, "Checking link...");
     try {
       await resolveRecoveryAccess();
+      const currentUserResult = await window.ClashlyAuth.getCurrentUser();
+      if (currentUserResult.error) {
+        throw currentUserResult.error;
+      }
+      if (!window.ClashlyAuth.canChangePassword(currentUserResult.user)) {
+        setStatus("Only email/password accounts can change password here.", "error");
+        return;
+      }
+
+      canSubmit = true;
       setStatus("Reset link verified. Enter your new password.", "success");
     } catch (error) {
       setStatus(mapResetError(error), "error");
     } finally {
-      setSubmitDisabled(false, "Update password");
+      setResetFormDisabled(!canSubmit);
+      setSubmitDisabled(!canSubmit, "Update password");
     }
   }
 
