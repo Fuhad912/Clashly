@@ -313,7 +313,8 @@
     const compactClass = options.compact ? " take-item--compact" : "";
     const username = getUsername(take.profile);
     const profileHref = take && take.user_id ? `profile.html?id=${encodeURIComponent(take.user_id)}` : "profile.html";
-    const takeHref = take && take.id ? `take.html?id=${encodeURIComponent(take.id)}` : "take.html";
+    const takeHrefSuffix = options && options.takeHrefSuffix ? String(options.takeHrefSuffix) : "";
+    const takeHref = take && take.id ? `take.html?id=${encodeURIComponent(take.id)}${takeHrefSuffix}` : "take.html";
     const relativeTime = window.ClashlyUtils.formatRelativeTime(take.created_at);
     const avatarMarkup = getAvatarMarkup(take.profile);
     const hasImage = Boolean(take.image_url);
@@ -449,6 +450,7 @@
           hideActionRow: Boolean(safeOptions.hideActionRow),
           hideInlineAiJudgeResult: Boolean(safeOptions.hideInlineAiJudgeResult),
           showOpenLink: Boolean(safeOptions.showOpenLink),
+          takeHrefSuffix: safeOptions.takeHrefSuffix || "",
         })
       )
       .join("");
