@@ -404,6 +404,15 @@
     padding: 24px var(--space-3) 28px;
   }
 
+  .feed-personalization {
+    padding: 16px var(--space-3) 18px;
+    gap: 12px;
+  }
+
+  .feed-personalization__chips {
+    gap: 8px;
+  }
+
   /* Bottom nav */
   .bottom-nav__inner {
     padding: 4px 4px calc(6px + env(safe-area-inset-bottom));
