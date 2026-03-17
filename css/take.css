@@ -12,6 +12,44 @@
   border-bottom: var(--line);
 }
 
+body.take-page--from-search .take-detail {
+  border: 0;
+  background: transparent;
+}
+
+body.take-page--from-search #take-detail-stream .take-item {
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  padding: 20px var(--space-4);
+  border-bottom: 0;
+  background: transparent;
+}
+
+body.take-page--from-search #take-detail-stream .take-item:hover {
+  background: transparent;
+}
+
+body.take-page--from-search #take-detail-stream .take-item__avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 0.72rem;
+}
+
+body.take-page--from-search #take-detail-stream .take-item__text {
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.14rem);
+  line-height: 1.5;
+}
+
+body.take-page--from-search #take-detail-stream .take-item__media {
+  border: 0;
+  border-radius: 18px;
+}
+
+body.take-page--from-search .ai-judge,
+body.take-page--from-search .comments-shell {
+  display: none;
+}
+
 .ai-judge {
   padding: var(--space-4);
   border-bottom: var(--line);
