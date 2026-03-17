@@ -179,7 +179,10 @@
     const commentsLabel = commentCount > 0 ? `Open comments (${commentCount})` : "Open comments";
     const loadingAttr = voteData.isLoading ? " disabled" : "";
     const shareUrl = window.ClashlyUtils.toTakeUrl(take.id);
-    const shareAction = `
+    const shareAction =
+      options && options.hideShareAction
+        ? ""
+        : `
       <button
         type="button"
         class="take-action take-action--share"
@@ -314,7 +317,10 @@
     const hasImage = Boolean(take.image_url);
     const ownerBadge = getOwnerBadge(take, options.currentUserId);
     const openLink = options.showOpenLink ? `<a href="${takeHref}" class="take-item__open">Open</a>` : "";
-    const mobileShareAction = `
+    const mobileShareAction =
+      options && options.hideShareAction
+        ? ""
+        : `
       <button
         type="button"
         class="take-action take-action--share take-item__share-mobile"
@@ -435,6 +441,7 @@
           compact: Boolean(safeOptions.compact),
           currentUserId: safeOptions.currentUserId || "",
           hideCommentsAction: Boolean(safeOptions.hideCommentsAction),
+          hideShareAction: Boolean(safeOptions.hideShareAction),
           showAiJudgeAction: Boolean(safeOptions.showAiJudgeAction),
           showDeleteAction: Boolean(safeOptions.showDeleteAction),
           hideActionRow: Boolean(safeOptions.hideActionRow),
