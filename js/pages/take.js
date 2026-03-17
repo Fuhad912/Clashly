@@ -25,7 +25,18 @@
 
   function setSearchEntryMode(isEnabled) {
     isSearchEntry = Boolean(isEnabled);
+    document.documentElement.classList.toggle("take-page--from-search", isSearchEntry);
     document.body.classList.toggle("take-page--from-search", isSearchEntry);
+
+    const aiJudgePanel = document.getElementById("ai-judge-panel");
+    if (aiJudgePanel) {
+      aiJudgePanel.hidden = isSearchEntry;
+    }
+
+    const commentsShell = document.querySelector(".comments-shell");
+    if (commentsShell instanceof HTMLElement) {
+      commentsShell.hidden = isSearchEntry;
+    }
   }
 
   function setAiJudgeStatus(message, type) {
