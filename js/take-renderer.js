@@ -326,19 +326,6 @@
     `;
   }
 
-  function renderRecommendationReason(take, options) {
-    if (!options || !options.showRecommendationReason) return "";
-    const reason = take && take.for_you_reason ? take.for_you_reason : null;
-    if (!reason || !reason.label) return "";
-
-    return `
-      <p class="take-item__reason" aria-label="Recommendation reason">
-        <span class="take-item__reason-kicker">For you</span>
-        <span class="take-item__reason-copy">${window.ClashlyUtils.escapeHtml(reason.label)}</span>
-      </p>
-    `;
-  }
-
   function renderListItem(take, options) {
     const compactClass = options.compact ? " take-item--compact" : "";
     const expandedClass = options && options.isExpanded ? " is-expanded" : "";
@@ -404,7 +391,6 @@
             </div>
             ${mobileShareAction}
           </header>
-          ${renderRecommendationReason(take, options)}
           <p class="take-item__text">${renderTakeText(take.content)}</p>
           ${mediaMarkup}
           ${renderActionRow(take, options)}
@@ -493,7 +479,6 @@
           hideActionRow: Boolean(safeOptions.hideActionRow),
           hideInlineAiJudgeResult: Boolean(safeOptions.hideInlineAiJudgeResult),
           showOpenLink: Boolean(safeOptions.showOpenLink),
-          showRecommendationReason: Boolean(safeOptions.showRecommendationReason),
           toggleOpenAction: Boolean(safeOptions.toggleOpenAction),
           isExpanded: safeOptions.expandedTakeId === take.id,
           takeHrefSuffix: safeOptions.takeHrefSuffix || "",
