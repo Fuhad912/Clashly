@@ -10,6 +10,7 @@
   let activeReplyTarget = null;
   let expandedReplyIds = new Set();
   let pendingCommentFocusId = "";
+  let isSearchEntry = false;
   let aiJudgeLoading = false;
   let aiJudgeBound = false;
 
@@ -20,6 +21,11 @@
       loading: document.getElementById("ai-judge-loading"),
       result: document.getElementById("ai-judge-result"),
     };
+  }
+
+  function setSearchEntryMode(isEnabled) {
+    isSearchEntry = Boolean(isEnabled);
+    document.body.classList.toggle("take-page--from-search", isSearchEntry);
   }
 
   function setAiJudgeStatus(message, type) {
@@ -104,6 +110,15 @@
     if (!result) return;
     result.hidden = true;
     result.innerHTML = "";
+  }
+
+  function setInlineAiJudgeState(judgeState) {
+    if (!currentTake) return;
+    currentTake = {
+      ...currentTake,
+      ai_judge: judgeState,
+    };
+    renderTake();
   }
 
   function getTakeVoteStats() {
@@ -277,6 +292,76 @@
       clearAiJudgeResult();
     } finally {
       setAiJudgeLoading(false);
+    }
+  }
+
+  async function handleInlineAiJudge(input) {
+    if (!input || !input.takeId || !currentTake || currentTake.id !== input.takeId) return;
+    if (!currentUserId) {
+      setTakeState("Please log in to use AI Judge.", "error");
+      return;
+    }
+    if (!window.ClashlyAiJudge) {
+      setTakeState("AI Judge is unavailable right now. Please try again.", "error");
+      return;
+    }
+    if (currentTake.ai_judge && currentTake.ai_judge.status === "loading") return;
+
+    const localEligibility = evaluateLocalAiJudgeEligibility();
+    if (!localEligibility.eligible) {
+      openAiJudgeReasonModal(localEligibility.reason);
+      return;
+    }
+
+    setInlineAiJudgeState({
+      status: "loading",
+      message: "",
+    });
+    setTakeState("", "");
+
+    try {
+      const judgeResult = await window.ClashlyAiJudge.analyzeTake(input.takeId);
+      if (judgeResult.error) {
+        throw judgeResult.error;
+      }
+
+      const payload = judgeResult.data || null;
+      if (!payload) {
+        throw new Error("AI Judge returned an empty response.");
+      }
+
+      if (payload.status === "not_eligible") {
+        const reason =
+          payload.eligibility && payload.eligibility.reason
+            ? payload.eligibility.reason
+            : "Not enough debate yet for AI Judge.";
+        setInlineAiJudgeState(null);
+        openAiJudgeReasonModal(reason);
+        return;
+      }
+
+      if ((payload.status === "fresh" || payload.status === "cached") && payload.result) {
+        setInlineAiJudgeState({
+          status: "ready",
+          source: payload.status,
+          result: payload.result,
+        });
+        setTakeState(
+          payload.status === "cached"
+            ? "Showing recent AI Judge analysis."
+            : "",
+          ""
+        );
+        return;
+      }
+
+      throw new Error("AI Judge returned an unexpected response.");
+    } catch (error) {
+      setInlineAiJudgeState({
+        status: "error",
+        message: "AI Judge is unavailable right now. Please try again.",
+      });
+      setTakeState(window.ClashlyUtils.reportError("Take inline AI Judge failed.", error, "AI Judge is unavailable right now. Please try again."), "error");
     }
   }
 
@@ -470,6 +555,9 @@
 
     window.ClashlyTakeRenderer.renderTakeList(streamEl, currentTake ? [currentTake] : [], {
       currentUserId,
+      hideCommentsAction: isSearchEntry,
+      showAiJudgeAction: isSearchEntry,
+      hideInlineAiJudgeResult: !isSearchEntry,
       emptyMessage: "Take not found.",
     });
 
@@ -485,6 +573,12 @@
       onStatus: setTakeState,
       onBookmark: handleBookmark,
     });
+    if (isSearchEntry) {
+      window.ClashlyTakeRenderer.bindAiJudgeActions(streamEl, {
+        onStatus: setTakeState,
+        onAiJudge: handleInlineAiJudge,
+      });
+    }
   }
 
   function bindCommentComposer() {
@@ -808,6 +902,7 @@
       const params = new URLSearchParams(window.location.search);
       const takeId = params.get("id");
       pendingCommentFocusId = String(params.get("commentId") || "").trim();
+      setSearchEntryMode(params.get("from") === "search");
       if (!takeId) {
         setTakeState("Missing take id.", "error");
         return;
@@ -815,8 +910,10 @@
 
       const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
-      bindCommentComposer();
-      bindAiJudgePanel();
+      if (!isSearchEntry) {
+        bindCommentComposer();
+        bindAiJudgePanel();
+      }
       bindAiJudgeReasonModal();
       updateCommentsSummary();
 
@@ -835,10 +932,13 @@
       }
 
       currentTake = takeResult.take;
+      currentCommentsCount = Number((currentTake && currentTake.comment_count) || 0);
       renderTake();
-      setAiJudgeLoading(false);
-      await loadComments();
-      focusCommentFromQueryIfNeeded();
+      if (!isSearchEntry) {
+        setAiJudgeLoading(false);
+        await loadComments();
+        focusCommentFromQueryIfNeeded();
+      }
       setTakeState("", "");
     } catch (error) {
       setTakeState(window.ClashlyUtils.reportError("Take page load failed.", error, "Could not load take."), "error");
