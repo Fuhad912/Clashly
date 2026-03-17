@@ -406,32 +406,6 @@ body[data-page="home"] .feed-head__inner {
   overflow-wrap: break-word;
 }
 
-.take-item__reason {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-}
-
-.take-item__reason-kicker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: var(--radius-pill);
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 72%, #ff6f4d 28%);
-  background: color-mix(in srgb, var(--color-surface-soft) 78%, #ff6f4d 22%);
-}
-
-.take-item__reason-copy {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
 
 /* ── Hashtags ──────────────────────────────────────────────── */
 
