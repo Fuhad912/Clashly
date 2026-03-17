@@ -205,6 +205,33 @@
     return normalized;
   }
 
+  function isUsernameConflictError(error) {
+    const code = error && typeof error.code === "string" ? error.code.toLowerCase() : "";
+    const message = error && typeof error.message === "string" ? error.message.toLowerCase() : "";
+    const details = error && typeof error.details === "string" ? error.details.toLowerCase() : "";
+    const hint = error && typeof error.hint === "string" ? error.hint.toLowerCase() : "";
+    const combined = `${message} ${details} ${hint}`;
+
+    return (
+      code === "23505" ||
+      combined.includes("username already exists") ||
+      combined.includes("duplicate key") ||
+      combined.includes("profiles_username_key")
+    );
+  }
+
+  function resolveSubmitErrorMessage(error) {
+    if (isUsernameConflictError(error)) {
+      return "Username already exists. Choose another one.";
+    }
+
+    if (error && typeof error.message === "string" && error.message.trim()) {
+      return error.message.trim();
+    }
+
+    return "Unable to complete setup.";
+  }
+
   function bindAvatarPreview(usernameInput, avatarInput, previewEl, handleEl) {
     const refresh = () => {
       const file = avatarInput.files && avatarInput.files[0] ? avatarInput.files[0] : null;
@@ -356,7 +383,8 @@
           setStatus("Profile saved. Redirecting to Clashe...", "success");
           redirectToHome();
         } catch (error) {
-          const message = window.ClashlyUtils.reportError("Profile setup submit failed.", error, "Unable to complete setup.");
+          window.ClashlyUtils.reportError("Profile setup submit failed.", error, "Unable to complete setup.");
+          const message = resolveSubmitErrorMessage(error);
           if (message.toLowerCase().includes("date_of_birth")) {
             setStatus("Database schema is outdated. Run supabase/phase2_setup.sql and try again.", "error");
             return;
