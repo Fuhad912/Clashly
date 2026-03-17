@@ -311,6 +311,8 @@
 
   function renderListItem(take, options) {
     const compactClass = options.compact ? " take-item--compact" : "";
+    const expandedClass = options && options.isExpanded ? " is-expanded" : "";
+    const toggleableClass = options && options.toggleOpenAction ? " take-item--toggleable" : "";
     const username = getUsername(take.profile);
     const profileHref = take && take.user_id ? `profile.html?id=${encodeURIComponent(take.user_id)}` : "profile.html";
     const takeHrefSuffix = options && options.takeHrefSuffix ? String(options.takeHrefSuffix) : "";
@@ -319,7 +321,17 @@
     const avatarMarkup = getAvatarMarkup(take.profile);
     const hasImage = Boolean(take.image_url);
     const ownerBadge = getOwnerBadge(take, options.currentUserId);
-    const openLink = options.showOpenLink ? `<a href="${takeHref}" class="take-item__open">Open</a>` : "";
+    const openLink = options.showOpenLink
+      ? options && options.toggleOpenAction
+        ? `<button
+            type="button"
+            class="take-item__open"
+            data-action="toggle-open"
+            data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}"
+            aria-expanded="${options.isExpanded ? "true" : "false"}"
+          >${options.isExpanded ? "Close" : "Open"}</button>`
+        : `<a href="${takeHref}" class="take-item__open">Open</a>`
+      : "";
     const mobileShareAction =
       options && options.hideShareAction
         ? ""
@@ -347,7 +359,7 @@
       : "";
 
     return `
-      <article class="take-item${compactClass}" data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}">
+      <article class="take-item${compactClass}${expandedClass}${toggleableClass}" data-take-id="${window.ClashlyUtils.escapeHtml(take.id)}">
         ${avatarMarkup}
         <div class="take-item__body">
           <header class="take-item__meta">
@@ -450,6 +462,8 @@
           hideActionRow: Boolean(safeOptions.hideActionRow),
           hideInlineAiJudgeResult: Boolean(safeOptions.hideInlineAiJudgeResult),
           showOpenLink: Boolean(safeOptions.showOpenLink),
+          toggleOpenAction: Boolean(safeOptions.toggleOpenAction),
+          isExpanded: safeOptions.expandedTakeId === take.id,
           takeHrefSuffix: safeOptions.takeHrefSuffix || "",
         })
       )
