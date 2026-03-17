@@ -411,6 +411,14 @@
     return `<div class="search-result__avatar">${window.ClashlyProfiles.initialsFromUsername(user.username)}</div>`;
   }
 
+  function toProfileHref(user) {
+    const params = new URLSearchParams();
+    if (user && user.id) params.set("id", user.id);
+    if (user && user.username) params.set("u", user.username);
+    const query = params.toString();
+    return query ? `profile.html?${query}` : "profile.html";
+  }
+
   function renderUsers(users) {
     const groupEl = document.getElementById("search-users-group");
     const bodyEl = document.getElementById("search-users-body");
@@ -429,12 +437,12 @@
           <article class="search-result">
             ${renderAvatar(user)}
             <div class="search-result__content">
-              <a class="search-result__title" href="profile.html?id=${encodeURIComponent(user.id)}">@${window.ClashlyUtils.escapeHtml(
+              <a class="search-result__title" href="${toProfileHref(user)}">@${window.ClashlyUtils.escapeHtml(
                 user.username
               )}</a>
               <p class="search-result__meta">${window.ClashlyUtils.escapeHtml(user.bio || "No bio yet.")}</p>
             </div>
-            <a class="search-result__action" href="profile.html?id=${encodeURIComponent(user.id)}">View</a>
+            <a class="search-result__action" href="${toProfileHref(user)}">View</a>
           </article>
         `
       )
