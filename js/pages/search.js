@@ -482,6 +482,7 @@
       showAiJudgeAction: true,
       hideInlineAiJudgeResult: true,
       showOpenLink: true,
+      takeHrefSuffix: "&from=search",
       emptyMessage: "No matching takes.",
     });
 
