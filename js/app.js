@@ -476,8 +476,6 @@
         ></button>
         <section class="onboarding-modal__panel" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
           <header class="onboarding-modal__head">
-            <p class="onboarding-modal__kicker">Welcome to Clashe</p>
-            <h2 id="onboarding-title" class="onboarding-modal__title">Quick start guide</h2>
             <button
               type="button"
               class="onboarding-modal__close"
@@ -486,6 +484,10 @@
             >
               X
             </button>
+            <div class="onboarding-modal__intro">
+              <p class="onboarding-modal__kicker">Welcome to Clashe</p>
+              <h2 id="onboarding-title" class="onboarding-modal__title">Quick start guide</h2>
+            </div>
           </header>
           <p class="onboarding-modal__copy">
             Clashe is built for sharp takes and clear debate. Here is how to get started.
