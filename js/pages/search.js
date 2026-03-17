@@ -7,6 +7,7 @@
   let currentQuery = "";
   let currentTakeResults = [];
   let currentTrendingTopics = [];
+  let expandedTakeId = "";
 
   const EXPLORE_LANE_THEMES = [
     { accent: "#ff6f4d", glow: "rgba(255, 111, 77, 0.18)", surface: "rgba(255, 111, 77, 0.08)" },
@@ -472,7 +473,12 @@
     if (!takes.length) {
       groupEl.hidden = true;
       streamEl.innerHTML = "";
+      expandedTakeId = "";
       return;
+    }
+
+    if (expandedTakeId && !takes.some((take) => take.id === expandedTakeId)) {
+      expandedTakeId = "";
     }
 
     groupEl.hidden = false;
@@ -482,7 +488,8 @@
       showAiJudgeAction: true,
       hideInlineAiJudgeResult: true,
       showOpenLink: true,
-      takeHrefSuffix: "&from=search",
+      toggleOpenAction: true,
+      expandedTakeId,
       emptyMessage: "No matching takes.",
     });
 
@@ -501,6 +508,36 @@
     window.ClashlyTakeRenderer.bindAiJudgeActions(streamEl, {
       onStatus: setState,
       onAiJudge: handleAiJudge,
+    });
+    bindTakeExpandActions(streamEl);
+  }
+
+  function toggleExpandedTake(takeId) {
+    const safeTakeId = String(takeId || "").trim();
+    if (!safeTakeId) return;
+    expandedTakeId = expandedTakeId === safeTakeId ? "" : safeTakeId;
+    renderTakes(currentTakeResults);
+  }
+
+  function bindTakeExpandActions(streamEl) {
+    const toggleButtons = streamEl.querySelectorAll("[data-action='toggle-open']");
+    toggleButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const takeId = button.getAttribute("data-take-id") || "";
+        toggleExpandedTake(takeId);
+      });
+    });
+
+    const takeItems = streamEl.querySelectorAll(".take-item--toggleable");
+    takeItems.forEach((item) => {
+      item.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest("a, button, input, select, textarea, label")) return;
+        const takeId = item.getAttribute("data-take-id") || "";
+        toggleExpandedTake(takeId);
+      });
     });
   }
 
