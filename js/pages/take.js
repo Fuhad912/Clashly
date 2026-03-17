@@ -346,12 +346,8 @@
           source: payload.status,
           result: payload.result,
         });
-        setTakeState(
-          payload.status === "cached"
-            ? "Showing recent AI Judge analysis."
-            : "",
-          ""
-        );
+        const verdict = payload.result && payload.result.verdict ? String(payload.result.verdict) : "";
+        setTakeState(verdict ? `AI Judge: ${verdict}` : "AI Judge analysis is ready.", "success");
         return;
       }
 
@@ -557,7 +553,7 @@
       currentUserId,
       hideCommentsAction: isSearchEntry,
       showAiJudgeAction: isSearchEntry,
-      hideInlineAiJudgeResult: !isSearchEntry,
+      hideInlineAiJudgeResult: true,
       emptyMessage: "Take not found.",
     });
 
