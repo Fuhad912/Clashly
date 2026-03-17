@@ -514,17 +514,18 @@
   }
 
   .comments-drawer__body .comment-item__actions {
-    gap: 16px;
+    column-gap: 18px;
+    row-gap: 12px;
     margin-top: 12px;
   }
 
   .comments-drawer__body .comment-action {
-    min-height: 36px;
-    padding: 5px 0;
+    min-height: 38px;
+    padding: 6px 0;
     border-radius: 0;
     background: transparent;
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 0.94rem;
+    font-weight: 780;
     letter-spacing: -0.01em;
   }
 
@@ -538,7 +539,7 @@
   .comments-drawer__body .comment-action--like {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     text-decoration: none;
   }
 
@@ -559,8 +560,8 @@
   }
 
   .comments-drawer__body .comment-action--like .comment-action__count {
-    font-size: 0.88rem;
-    font-weight: 700;
+    font-size: 0.92rem;
+    font-weight: 780;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -582,9 +583,12 @@
   }
 
   .comments-drawer__body .comment-action--icon-plain {
-    min-width: 32px;
-    min-height: 32px;
-    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 0;
     color: #dc2626;
     background: transparent;
     border: 0;
@@ -595,6 +599,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .comments-drawer__body .comment-action--icon-plain .comment-action__label {
+    font-weight: inherit;
+    line-height: 1;
   }
 
   .comments-drawer__body .comment-action--icon-plain .comment-action__icon svg {
