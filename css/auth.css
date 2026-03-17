@@ -624,12 +624,26 @@
 
 .otp-close-btn,
 .forgot-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 36px;
-  padding: 0 12px;
+  min-width: 36px;
+  padding: 0;
   border: var(--line);
   border-radius: var(--radius-1);
+  color: var(--color-text);
   font-size: 0.78rem;
   font-weight: 700;
+  line-height: 0;
+}
+
+.otp-close-btn svg,
+.forgot-close-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  pointer-events: none;
 }
 
 .otp-close-btn:hover,
