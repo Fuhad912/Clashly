@@ -38,45 +38,21 @@ body[data-page="home"] .feed-head__inner {
 
 .home-head__bar {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
   align-items: center;
-  gap: 12px;
-  padding: 10px var(--space-4) 6px;
+  gap: 8px;
+  padding: 6px var(--space-4) 4px;
 }
 
-.home-head__identity {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-}
-
-.home-head__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--color-surface-soft);
-  border: var(--line);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--color-text-muted);
-}
-
-.home-head__avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.home-head__spacer {
+  width: 32px;
+  height: 32px;
 }
 
 .home-head__brand {
   justify-self: center;
-  width: 72px;
-  height: 42px;
+  width: 64px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -96,8 +72,8 @@ body[data-page="home"] .feed-head__inner {
 }
 
 .home-head__utility {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -109,8 +85,8 @@ body[data-page="home"] .feed-head__inner {
 }
 
 .home-head__utility svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .home-head__utility:hover {
@@ -137,10 +113,10 @@ body[data-page="home"] .feed-head__inner {
 
 .home-switch__btn {
   position: relative;
-  min-height: 76px;
-  padding: 8px 16px 18px;
+  min-height: 56px;
+  padding: 6px 16px 12px;
   border-radius: 0;
-  font-size: clamp(1.2rem, 1rem + 0.8vw, 1.7rem);
+  font-size: clamp(1.02rem, 0.92rem + 0.6vw, 1.35rem);
   font-weight: 500;
   letter-spacing: -0.04em;
   color: var(--color-text-muted);
@@ -165,9 +141,9 @@ body[data-page="home"] .feed-head__inner {
   left: 18px;
   right: 18px;
   bottom: -1px;
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
-  background: #1d9bf0;
+  background: var(--color-text);
 }
 
 /* ── Feed states ───────────────────────────────────────────── */
