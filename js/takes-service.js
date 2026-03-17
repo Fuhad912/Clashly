@@ -468,6 +468,29 @@
     return createVoteSummary(0, 0, "");
   }
 
+  function previewVoteSummary(vote, nextVoteType) {
+    const currentVote = vote || defaultVoteSummary();
+    const safeNextVoteType = normalizeVoteType(nextVoteType);
+    const safeCurrentVote = normalizeVoteType(currentVote.user_vote);
+    let agree = Number(currentVote.agree_count || 0);
+    let disagree = Number(currentVote.disagree_count || 0);
+    let userVote = safeCurrentVote;
+
+    if (safeCurrentVote === safeNextVoteType) {
+      if (safeCurrentVote === "agree") agree = Math.max(0, agree - 1);
+      if (safeCurrentVote === "disagree") disagree = Math.max(0, disagree - 1);
+      userVote = "";
+    } else {
+      if (safeCurrentVote === "agree") agree = Math.max(0, agree - 1);
+      if (safeCurrentVote === "disagree") disagree = Math.max(0, disagree - 1);
+      if (safeNextVoteType === "agree") agree += 1;
+      if (safeNextVoteType === "disagree") disagree += 1;
+      userVote = safeNextVoteType;
+    }
+
+    return createVoteSummary(agree, disagree, userVote);
+  }
+
   function buildVoteSummaryMap(takeIds, voteRows, currentUserId) {
     const map = new Map();
     takeIds.forEach((takeId) => {
@@ -1640,6 +1663,7 @@
     fetchBookmarkedTakes,
     fetchTakeById,
     submitVote,
+    previewVoteSummary,
     toggleBookmark,
     deleteTake,
   };
