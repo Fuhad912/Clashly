@@ -171,14 +171,18 @@
     return Array.from(providers);
   }
 
+  function isGmailAddress(email) {
+    return /@gmail\.com$/i.test(String(email || "").trim());
+  }
+
   function canChangePassword(user) {
     const providers = getUserProviders(user);
-    return providers.includes("email");
+    return providers.includes("email") && isGmailAddress(user && user.email);
   }
 
   function canChangeEmail(user) {
     const providers = getUserProviders(user);
-    return providers.includes("google");
+    return providers.includes("email") && isGmailAddress(user && user.email);
   }
 
   function onAuthStateChange(callback) {
@@ -203,6 +207,7 @@
     getSession,
     getCurrentUser,
     getUserProviders,
+    isGmailAddress,
     canChangePassword,
     canChangeEmail,
     onAuthStateChange,
