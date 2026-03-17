@@ -284,6 +284,44 @@
     line-height: 1.52;
   }
 
+  .comment-item__actions {
+    column-gap: 18px;
+    row-gap: 10px;
+    margin-top: 10px;
+  }
+
+  .comment-action {
+    min-height: 36px;
+    padding: 6px 0;
+    font-size: 0.86rem;
+    font-weight: 750;
+  }
+
+  .comment-action--like {
+    gap: 7px;
+  }
+
+  .comment-action--like .comment-action__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .comment-action--like .comment-action__count {
+    font-size: 0.84rem;
+    font-weight: 750;
+  }
+
+  .comment-action--icon-plain {
+    min-height: 36px;
+    padding: 6px 0;
+    gap: 7px;
+  }
+
+  .comment-action--icon-plain .comment-action__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
   /* Create / Compose */
   .composer-modal__dialog {
     width: 100%;
