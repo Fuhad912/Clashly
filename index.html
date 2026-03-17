@@ -63,27 +63,26 @@
         </header>
 
         <p id="feed-state" class="feed-state">Loading takes...</p>
+        <section id="home-personalization-banner" class="feed-personalization" hidden></section>
         <section id="feed-stream" class="feed-stream" aria-label="Take feed">
         </section>
       </section>
 
       <aside class="side-column" aria-label="Supplementary feed context">
-        <section class="side-block">
-          <h2 class="side-block__title">Pulse</h2>
-          <ul class="topic-list">
-            <li><a href="hashtag.html?tag=interfacewars">#interfacewars</a></li>
-            <li><a href="hashtag.html?tag=remoteculture">#remoteculture</a></li>
-            <li><a href="hashtag.html?tag=creatorburnout">#creatorburnout</a></li>
-            <li><a href="hashtag.html?tag=launchweek">#launchweek</a></li>
-          </ul>
+        <section class="side-block" id="home-side-personalization">
+          <h2 class="side-block__title" id="home-side-personalization-title">Your lane</h2>
+          <p class="side-block__text" id="home-side-personalization-text">
+            Your feed will start adapting as you search, vote, save, and open more debates.
+          </p>
+          <div class="topic-list topic-list--chips" id="home-side-personalization-chips"></div>
         </section>
 
-        <section class="side-block">
-          <h2 class="side-block__title">Active Debate</h2>
-          <p class="side-block__text">
-            Should social apps show downvotes publicly or only weight ranking silently?
+        <section class="side-block" id="home-side-context">
+          <h2 class="side-block__title" id="home-side-context-title">Why this mix</h2>
+          <p class="side-block__text" id="home-side-context-text">
+            Familiar topics and fresh posts are blended here so the feed stays opinionated without getting repetitive.
           </p>
-          <a href="take.html" class="text-link">Join thread</a>
+          <div class="side-block__meta" id="home-side-context-meta"></div>
         </section>
       </aside>
     </main>
