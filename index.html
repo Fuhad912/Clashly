@@ -40,25 +40,31 @@
       <section class="feed-column">
         <header class="feed-head">
           <div class="feed-head__inner home-head">
-            <div class="home-head__left">
-              <div class="home-switch" role="tablist" aria-label="Home feed sections">
-                <button type="button" class="home-switch__btn home-switch__btn--active" data-home-tab="for-you" aria-pressed="true">
-                  For you
-                </button>
-                <button type="button" class="home-switch__btn" data-home-tab="following" aria-pressed="false">
-                  Following
-                </button>
+            <div class="home-head__bar">
+              <a class="home-head__identity" id="home-head-profile-link" href="profile.html" aria-label="Open profile">
+                <span class="home-head__avatar" id="home-head-avatar" aria-hidden="true">CL</span>
+              </a>
+              <a class="home-head__brand" href="index.html" aria-label="Clashe home">
+                <img src="assets/clashly-mark.svg" alt="" />
+              </a>
+              <div class="home-head__actions">
+                <a class="home-head__utility" href="search.html" aria-label="Search and more">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="5" r="1.9"></circle>
+                    <circle cx="12" cy="12" r="1.9"></circle>
+                    <circle cx="12" cy="19" r="1.9"></circle>
+                  </svg>
+                </a>
               </div>
             </div>
-            <a class="home-head__brand" href="index.html" aria-label="Clashe home">
-              <img src="assets/clashly-mark.svg" alt="" />
-            </a>
-            <a class="home-head__search" href="search.html" aria-label="Search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="6"></circle>
-                <path d="m20 20-4.2-4.2"></path>
-              </svg>
-            </a>
+            <div class="home-switch" role="tablist" aria-label="Home feed sections">
+              <button type="button" class="home-switch__btn home-switch__btn--active" data-home-tab="for-you" aria-pressed="true">
+                For you
+              </button>
+              <button type="button" class="home-switch__btn" data-home-tab="following" aria-pressed="false">
+                Following
+              </button>
+            </div>
           </div>
         </header>
 
