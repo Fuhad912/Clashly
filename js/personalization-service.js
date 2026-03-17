@@ -333,6 +333,14 @@
         .sort((left, right) => Number(right[1]) - Number(left[1]))
         .slice(0, 4)
         .map(([tag]) => tag),
+      authors: Object.entries(state.authors)
+        .sort((left, right) => Number(right[1]) - Number(left[1]))
+        .slice(0, 3)
+        .map(([authorId]) => authorId),
+      searchTerms: Object.entries(state.searchTerms)
+        .sort((left, right) => Number(right[1]) - Number(left[1]))
+        .slice(0, 4)
+        .map(([term]) => term),
     };
   }
 
@@ -351,6 +359,145 @@
     };
   }
 
+  function formatReasonLabel(kind, value, take) {
+    if (kind === "fresh") {
+      return "Fresh on your feed";
+    }
+    if (!value) return "";
+    if (kind === "author") {
+      const username = take && take.profile && take.profile.username ? `@${take.profile.username}` : "this creator";
+      return `You engage with ${username}`;
+    }
+    if (kind === "category") {
+      const categoryName = take && take.category && take.category.name ? take.category.name : value;
+      return `More from ${categoryName}`;
+    }
+    if (kind === "hashtag") {
+      return `Because of #${String(value).replace(/^#/, "")}`;
+    }
+    if (kind === "search") {
+      return `Matches "${value}"`;
+    }
+    return String(value);
+  }
+
+  function buildTakeReason(take, state) {
+    if (!take) return null;
+
+    let bestKind = "";
+    let bestValue = "";
+    let bestWeight = 0;
+
+    if (take.user_id) {
+      const authorWeight = Number(state.authors[take.user_id] || 0);
+      if (authorWeight > bestWeight) {
+        bestKind = "author";
+        bestValue = take.user_id;
+        bestWeight = authorWeight;
+      }
+    }
+
+    if (take.category && take.category.slug) {
+      const categoryKey = normalizeSignalKey(take.category.slug);
+      const categoryWeight = Number(state.categories[categoryKey] || 0);
+      if (categoryWeight > bestWeight) {
+        bestKind = "category";
+        bestValue = categoryKey;
+        bestWeight = categoryWeight;
+      }
+    }
+
+    (take.hashtags || []).forEach((tag) => {
+      const normalized = normalizeSignalKey(typeof tag === "string" ? tag : tag && tag.tag ? tag.tag : "");
+      const hashtagWeight = Number(state.hashtags[normalized] || 0);
+      if (hashtagWeight > bestWeight) {
+        bestKind = "hashtag";
+        bestValue = normalized;
+        bestWeight = hashtagWeight;
+      }
+    });
+
+    const content = String(take.content || "").toLowerCase();
+    Object.entries(state.searchTerms).forEach(([token, weight]) => {
+      if (token && content.includes(token) && Number(weight) > bestWeight) {
+        bestKind = "search";
+        bestValue = token;
+        bestWeight = Number(weight);
+      }
+    });
+
+    if (!bestKind) {
+      return {
+        kind: "fresh",
+        label: formatReasonLabel("fresh", "", take),
+      };
+    }
+
+    return {
+      kind: bestKind,
+      value: bestValue,
+      label: formatReasonLabel(bestKind, bestValue, take),
+    };
+  }
+
+  function diversifyRankedTakes(takes) {
+    const pool = Array.isArray(takes) ? takes.slice() : [];
+    const ranked = [];
+    const authorSeen = new Map();
+    const categorySeen = new Map();
+
+    while (pool.length) {
+      let bestIndex = 0;
+      let bestScore = -Infinity;
+
+      pool.forEach((take, index) => {
+        const authorPenalty = Number(authorSeen.get(take.user_id) || 0) * 4.5;
+        const categoryKey = take && take.category && take.category.slug ? take.category.slug : "";
+        const categoryPenalty = Number(categorySeen.get(categoryKey) || 0) * 2.8;
+        const adjustedScore = Number(take.for_you_score || 0) - authorPenalty - categoryPenalty - index * 0.015;
+        if (adjustedScore > bestScore) {
+          bestScore = adjustedScore;
+          bestIndex = index;
+        }
+      });
+
+      const [chosen] = pool.splice(bestIndex, 1);
+      ranked.push(chosen);
+      if (chosen && chosen.user_id) {
+        authorSeen.set(chosen.user_id, Number(authorSeen.get(chosen.user_id) || 0) + 1);
+      }
+      const categoryKey = chosen && chosen.category && chosen.category.slug ? chosen.category.slug : "";
+      if (categoryKey) {
+        categorySeen.set(categoryKey, Number(categorySeen.get(categoryKey) || 0) + 1);
+      }
+    }
+
+    return ranked;
+  }
+
+  function buildFeedSummary(userId, rankedTakes) {
+    const summary = getSignalSummary(userId);
+    const topInterests = summary.topInterests || { categories: [], hashtags: [], authors: [], searchTerms: [] };
+    const reasonChips = [
+      ...topInterests.categories.slice(0, 2).map((slug) => ({ kind: "category", label: slug })),
+      ...topInterests.hashtags.slice(0, 3).map((tag) => ({ kind: "hashtag", label: `#${tag}` })),
+    ].slice(0, 4);
+
+    const leadReason =
+      rankedTakes && rankedTakes[0] && rankedTakes[0].for_you_reason && rankedTakes[0].for_you_reason.label
+        ? rankedTakes[0].for_you_reason.label
+        : "";
+
+    return {
+      ...summary,
+      reasonChips,
+      headline: summary.hasSignals ? "Your mix is learning from how you move." : "Your For you feed starts simple and sharp.",
+      supporting: summary.hasSignals
+        ? leadReason || "Recent votes, saves, searches, and topic trails are shaping this feed."
+        : "Vote, save, search, and open threads to train the mix around your side of the debate.",
+    };
+  }
+
   function scoreTake(take, state) {
     const vote = take.vote || {};
     const totalVotes = Number(vote.total_votes || 0);
@@ -359,11 +506,11 @@
     let score = recencyScore + Math.min(totalVotes, 40) * 0.4;
 
     if (take.category && take.category.slug) {
-      score += Number(state.categories[take.category.slug] || 0) * 2.8;
+      score += Number(state.categories[normalizeSignalKey(take.category.slug)] || 0) * 2.8;
     }
 
     (take.hashtags || []).forEach((tag) => {
-      const normalized = typeof tag === "string" ? tag : tag && tag.tag ? tag.tag : "";
+      const normalized = normalizeSignalKey(typeof tag === "string" ? tag : tag && tag.tag ? tag.tag : "");
       score += Number(state.hashtags[normalized] || 0) * 1.85;
     });
 
@@ -387,33 +534,44 @@
 
   async function rankForYou(takes, userId) {
     const safeTakes = Array.isArray(takes) ? takes.slice() : [];
-    if (!userId || !safeTakes.length) {
+    if (!userId) {
       return {
         takes: safeTakes,
         meta: {
           hasSignals: false,
-          topInterests: { categories: [], hashtags: [] },
+          topInterests: { categories: [], hashtags: [], authors: [], searchTerms: [] },
+          reasonChips: [],
+          headline: "Your For you feed starts simple and sharp.",
+          supporting: "Vote, save, search, and open threads to train the mix around your side of the debate.",
         },
       };
     }
 
     const state = await hydrateUserState(userId);
-    const summary = getSignalSummary(userId);
+    if (!safeTakes.length) {
+      return {
+        takes: [],
+        meta: buildFeedSummary(userId, []),
+      };
+    }
 
-    const ranked = safeTakes
+    const ranked = diversifyRankedTakes(
+      safeTakes
       .map((take) => ({
         ...take,
         for_you_score: scoreTake(take, state),
+        for_you_reason: buildTakeReason(take, state),
       }))
       .sort((left, right) => {
         const scoreDiff = Number(right.for_you_score || 0) - Number(left.for_you_score || 0);
         if (scoreDiff !== 0) return scoreDiff;
         return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
-      });
+      })
+    );
 
     return {
       takes: ranked,
-      meta: summary,
+      meta: buildFeedSummary(userId, ranked),
     };
   }
 
