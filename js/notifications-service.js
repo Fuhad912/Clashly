@@ -4,6 +4,8 @@
   const DEFAULT_LIMIT = 25;
   const MAX_LIMIT = 60;
   const CACHE_TTL_MS = 15_000;
+  const FULL_NOTIFICATION_COLUMNS = "id, user_id, actor_id, type, target_id, target_take_id, target_comment_id, is_read, created_at";
+  const BASE_NOTIFICATION_COLUMNS = "id, user_id, actor_id, type, target_id, is_read, created_at";
   const notificationsCache = new Map();
 
   function getClientOrThrow() {
@@ -60,6 +62,17 @@
       message.includes(`function public.${String(fnName || "").toLowerCase()}`) ||
       message.includes(`function ${String(fnName || "").toLowerCase()}`)
     );
+  }
+
+  function isMissingColumn(error, columnName) {
+    if (!error || !columnName) return false;
+    const code = String(error.code || "");
+    const message = String(error.message || "").toLowerCase();
+    return code === "42703" || message.includes(String(columnName).toLowerCase());
+  }
+
+  function isMissingNotificationTargetColumns(error) {
+    return isMissingColumn(error, "target_take_id") || isMissingColumn(error, "target_comment_id");
   }
 
   function getCachedNotifications(cacheKey) {
@@ -157,7 +170,8 @@
     }
 
     if (targetTakeId) {
-      return `take.html?id=${encodeURIComponent(targetTakeId)}`;
+      const takeUrl = `take.html?id=${encodeURIComponent(targetTakeId)}`;
+      return targetCommentId ? `${takeUrl}&commentId=${encodeURIComponent(targetCommentId)}` : takeUrl;
     }
 
     if (notification.target_id) {
@@ -234,6 +248,8 @@
     const userId = String(input.userId || "").trim();
     const actorId = String(input.actorId || "").trim();
     const targetId = String(input.targetId || "").trim();
+    const targetTakeId = String(input.targetTakeId || "").trim();
+    const targetCommentId = String(input.targetCommentId || "").trim();
 
     if (!userId || !actorId) {
       return { notification: null, error: new Error("Notification is missing required users.") };
@@ -244,16 +260,32 @@
     }
 
     const client = getClientOrThrow();
-    const result = await client
+    const insertPayload = {
+      user_id: userId,
+      actor_id: actorId,
+      type: safeType,
+      target_id: targetId || null,
+      target_take_id: targetTakeId || null,
+      target_comment_id: targetCommentId || null,
+    };
+    let result = await client
       .from(NOTIFICATIONS_TABLE)
-      .insert({
-        user_id: userId,
-        actor_id: actorId,
-        type: safeType,
-        target_id: targetId || null,
-      })
-      .select("id, user_id, actor_id, type, target_id, is_read, created_at")
+      .insert(insertPayload)
+      .select(FULL_NOTIFICATION_COLUMNS)
       .single();
+
+    if (result.error && isMissingNotificationTargetColumns(result.error)) {
+      result = await client
+        .from(NOTIFICATIONS_TABLE)
+        .insert({
+          user_id: userId,
+          actor_id: actorId,
+          type: safeType,
+          target_id: targetId || null,
+        })
+        .select(BASE_NOTIFICATION_COLUMNS)
+        .single();
+    }
 
     if (result.error && result.error.code === "23505") {
       return {
@@ -321,19 +353,27 @@
       };
     }
 
-    let queryBuilder = client
-      .from(NOTIFICATIONS_TABLE)
-      .select("id, user_id, actor_id, type, target_id, is_read, created_at")
-      .eq("user_id", safeUserId)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(limit);
+    function buildFallbackQuery(selectColumns) {
+      let queryBuilder = client
+        .from(NOTIFICATIONS_TABLE)
+        .select(selectColumns)
+        .eq("user_id", safeUserId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(limit);
 
-    if (cursor) {
-      queryBuilder = queryBuilder.lt("created_at", cursor.created_at);
+      if (cursor) {
+        queryBuilder = queryBuilder.lt("created_at", cursor.created_at);
+      }
+
+      return queryBuilder;
     }
 
-    const result = await queryBuilder;
+    let result = await buildFallbackQuery(FULL_NOTIFICATION_COLUMNS);
+    if (result.error && isMissingNotificationTargetColumns(result.error)) {
+      result = await buildFallbackQuery(BASE_NOTIFICATION_COLUMNS);
+    }
+
     if (result.error) {
       return { notifications: [], nextCursor: null, hasMore: false, error: result.error };
     }
@@ -341,7 +381,19 @@
     const rows = result.data || [];
     const actorIds = [...new Set(rows.map((row) => row.actor_id).filter(Boolean))];
     const commentTargetIds = [
-      ...new Set(rows.filter((row) => row.type === "comment_like" && row.target_id).map((row) => row.target_id)),
+      ...new Set(
+        rows
+          .map((row) => {
+            if (row.type === "comment_like") {
+              return row.target_comment_id || row.target_id || "";
+            }
+            if (row.type === "reply") {
+              return row.target_comment_id || "";
+            }
+            return "";
+          })
+          .filter(Boolean)
+      ),
     ];
 
     const [profilesResult, commentsResult] = await Promise.all([fetchProfilesByIds(actorIds), fetchCommentsByIds(commentTargetIds)]);
@@ -354,8 +406,13 @@
 
     const commentMap = new Map((commentsResult.comments || []).map((comment) => [comment.id, comment]));
     const directTakeIds = rows
-      .filter((row) => row.type !== "follow" && row.type !== "comment_like" && row.target_id)
-      .map((row) => row.target_id);
+      .map((row) => {
+        if (row.type === "follow") return "";
+        if (row.target_take_id) return row.target_take_id;
+        if (row.type === "comment_like") return "";
+        return row.target_id || "";
+      })
+      .filter(Boolean);
     const commentTakeIds = (commentsResult.comments || []).map((comment) => comment.take_id).filter(Boolean);
     const takeIds = [...new Set(directTakeIds.concat(commentTakeIds))];
 
@@ -370,10 +427,11 @@
     const notifications = rows.map((row) => {
       const actor = profileMap.get(row.actor_id) || null;
       const targetTakeId =
-        row.type === "comment_like"
-          ? ((commentMap.get(row.target_id) && commentMap.get(row.target_id).take_id) || "")
-          : row.target_id || "";
-      const targetCommentId = row.type === "comment_like" ? row.target_id || "" : null;
+        row.target_take_id ||
+        (row.type === "comment_like"
+          ? ((commentMap.get(row.target_comment_id || row.target_id) && commentMap.get(row.target_comment_id || row.target_id).take_id) || "")
+          : row.target_id || "");
+      const targetCommentId = row.target_comment_id || (row.type === "comment_like" ? row.target_id || "" : null);
       const take = targetTakeId ? takeMap.get(targetTakeId) || null : null;
       const notification = {
         ...row,
