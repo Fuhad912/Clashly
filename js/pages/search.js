@@ -23,6 +23,11 @@
     return (params.get("q") || "").trim();
   }
 
+  function getExpandedTakeQuery() {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get("expandTake") || "").trim();
+  }
+
   function normalizeSearchTerm(value) {
     return String(value || "").trim();
   }
@@ -927,12 +932,14 @@
 
   async function loadResults() {
     currentQuery = getQuery();
+    expandedTakeId = currentQuery ? getExpandedTakeQuery() : "";
     updateHeader();
     setDiscoveryVisibility(!currentQuery);
 
     if (!currentQuery) {
       renderRecentSearches();
       currentTakeResults = [];
+      expandedTakeId = "";
       renderTakes([]);
       renderUsers([]);
       renderHashtags([]);
