@@ -124,10 +124,7 @@
       `,
       comments: `
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7.1 5.25h9.8a2.15 2.15 0 0 1 2.15 2.15v6.1a2.15 2.15 0 0 1-2.15 2.15h-5.1l-3.95 3.1v-3.1H7.1a2.15 2.15 0 0 1-2.15-2.15V7.4A2.15 2.15 0 0 1 7.1 5.25Z"></path>
-          <circle cx="9.35" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
-          <circle cx="12" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
-          <circle cx="14.65" cy="10.45" r="0.9" fill="currentColor" stroke="none"></circle>
+          <path d="M12 4.75c4.56 0 8.25 3.13 8.25 7 0 3.87-3.69 7-8.25 7-1.04 0-2.04-.16-2.96-.45l-3.54 1.58 1.08-3.06C5.28 15.58 3.75 13.79 3.75 11.75c0-3.87 3.69-7 8.25-7Z"></path>
         </svg>
       `,
       bookmark: `
@@ -137,9 +134,9 @@
       `,
       share: `
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M14.3 5.25h4.45V9.7"></path>
-          <path d="M18.35 5.65 10.6 13.4"></path>
-          <path d="M18 13.1v3.55a2.1 2.1 0 0 1-2.1 2.1h-8.55a2.1 2.1 0 0 1-2.1-2.1V8.1A2.1 2.1 0 0 1 7.35 6h3.55"></path>
+          <path d="M12 15.7V4.6"></path>
+          <path d="m8.15 8.35 3.85-3.85 3.85 3.85"></path>
+          <path d="M6.35 10.9v7.1c0 .83.67 1.5 1.5 1.5h8.3c.83 0 1.5-.67 1.5-1.5v-7.1"></path>
         </svg>
       `,
       judge: `
