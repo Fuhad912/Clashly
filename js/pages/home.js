@@ -446,6 +446,7 @@
           actorId: currentUserId,
           type: "bookmark",
           targetId: target.id,
+          targetTakeId: target.id,
         }).catch(() => {});
       }
 
