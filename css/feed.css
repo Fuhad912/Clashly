@@ -142,6 +142,80 @@
   background: var(--color-surface-muted);
 }
 
+.feed-personalization {
+  display: grid;
+  gap: 14px;
+  padding: 18px var(--space-4) 20px;
+  border-bottom: var(--line);
+  background:
+    radial-gradient(circle at top right, rgba(255, 111, 77, 0.12), transparent 34%),
+    linear-gradient(180deg, var(--color-surface-soft) 0%, var(--color-surface) 100%);
+}
+
+.feed-personalization__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.feed-personalization__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.feed-personalization__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 1.04rem + 0.35vw, 1.45rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.feed-personalization__text {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.feed-personalization__chips,
+.topic-list--chips,
+.side-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feed-personalization__chip,
+.topic-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: var(--line);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.feed-personalization__chip:hover,
+.topic-chip:hover {
+  background: var(--color-hover);
+}
+
+.topic-chip--muted,
+.side-block__muted {
+  color: var(--color-text-muted);
+}
+
 /* ── Empty state (with visual) ─────────────────────────────── */
 
 .feed-empty-visual {
@@ -308,6 +382,33 @@
   letter-spacing: -0.01em;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+.take-item__reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.take-item__reason-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 72%, #ff6f4d 28%);
+  background: color-mix(in srgb, var(--color-surface-soft) 78%, #ff6f4d 22%);
+}
+
+.take-item__reason-copy {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
 /* ── Hashtags ──────────────────────────────────────────────── */
