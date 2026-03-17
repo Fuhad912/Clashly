@@ -132,6 +132,105 @@
     updateHeader();
   }
 
+  function toHashtagHref(tag) {
+    return `hashtag.html?tag=${encodeURIComponent(String(tag || "").replace(/^#/, ""))}`;
+  }
+
+  function toCategoryHref(slug) {
+    return `category.html?category=${encodeURIComponent(String(slug || ""))}`;
+  }
+
+  function renderPersonalizationContexts() {
+    const bannerEl = document.getElementById("home-personalization-banner");
+    const sideTitleEl = document.getElementById("home-side-personalization-title");
+    const sideTextEl = document.getElementById("home-side-personalization-text");
+    const sideChipsEl = document.getElementById("home-side-personalization-chips");
+    const contextTitleEl = document.getElementById("home-side-context-title");
+    const contextTextEl = document.getElementById("home-side-context-text");
+    const contextMetaEl = document.getElementById("home-side-context-meta");
+    const state = getSectionState(activeSection);
+    const meta = state.meta || null;
+    const isForYou = activeSection === "for-you";
+
+    if (bannerEl) {
+      if (!isForYou) {
+        bannerEl.hidden = true;
+        bannerEl.innerHTML = "";
+      } else {
+        const chips = (meta && Array.isArray(meta.reasonChips) ? meta.reasonChips : []).slice(0, 4);
+        bannerEl.hidden = false;
+        bannerEl.innerHTML = `
+          <div class="feed-personalization__copy">
+            <p class="feed-personalization__eyebrow">For you</p>
+            <h2 class="feed-personalization__title">${window.ClashlyUtils.escapeHtml(
+              (meta && meta.headline) || "Your mix is learning from how you move."
+            )}</h2>
+            <p class="feed-personalization__text">${window.ClashlyUtils.escapeHtml(
+              (meta && meta.supporting) || "Recent searches, votes, and saves are shaping what rises first."
+            )}</p>
+          </div>
+          <div class="feed-personalization__chips">
+            ${chips
+              .map((chip) => {
+                const label = String((chip && chip.label) || "").trim();
+                if (!label) return "";
+                const href = chip.kind === "category" ? toCategoryHref(label) : toHashtagHref(label);
+                return `<a class="feed-personalization__chip" href="${href}">${window.ClashlyUtils.escapeHtml(label)}</a>`;
+              })
+              .join("")}
+          </div>
+        `;
+      }
+    }
+
+    if (sideTitleEl) {
+      sideTitleEl.textContent = isForYou ? "Your lane" : "Following";
+    }
+    if (sideTextEl) {
+      sideTextEl.textContent = isForYou
+        ? (meta && meta.supporting) || "Your searches, votes, saves, and opens start teaching the feed what to surface."
+        : "This tab stays close to the people you already follow, without personalization mixing in extra posts.";
+    }
+    if (sideChipsEl) {
+      const categoryChips = meta && meta.topInterests && Array.isArray(meta.topInterests.categories) ? meta.topInterests.categories : [];
+      const hashtagChips = meta && meta.topInterests && Array.isArray(meta.topInterests.hashtags) ? meta.topInterests.hashtags : [];
+      const chips = isForYou
+        ? [
+            ...categoryChips.slice(0, 2).map((slug) => ({ kind: "category", label: slug })),
+            ...hashtagChips.slice(0, 4).map((tag) => ({ kind: "hashtag", label: `#${tag}` })),
+          ].slice(0, 6)
+        : [];
+      sideChipsEl.innerHTML = chips.length
+        ? chips
+            .map((chip) => {
+              const href = chip.kind === "category" ? toCategoryHref(chip.label) : toHashtagHref(chip.label);
+              return `<a class="topic-chip" href="${href}">${window.ClashlyUtils.escapeHtml(chip.label)}</a>`;
+            })
+            .join("")
+        : `<span class="side-block__muted">${isForYou ? "No strong signals yet." : "Switch back to For you for personalized picks."}</span>`;
+    }
+    if (contextTitleEl) {
+      contextTitleEl.textContent = isForYou ? "Why this mix" : "How it works";
+    }
+    if (contextTextEl) {
+      contextTextEl.textContent = isForYou
+        ? (meta && meta.headline) || "Familiar topics and fresh posts are blended together so the feed feels learned, not random."
+        : "Following stays chronological and relationship-led, so it feels closer to a classic social timeline.";
+    }
+    if (contextMetaEl) {
+      const stats = [];
+      if (isForYou && meta && meta.totalSignals) {
+        stats.push(`${meta.totalSignals} active signals`);
+      }
+      if (state && Array.isArray(state.takes) && state.takes.length) {
+        stats.push(`${state.takes.length} posts loaded`);
+      }
+      contextMetaEl.innerHTML = stats.length
+        ? stats.map((stat) => `<span class="topic-chip topic-chip--muted">${window.ClashlyUtils.escapeHtml(stat)}</span>`).join("")
+        : "";
+    }
+  }
+
   async function rankForYouFeed(takes) {
     if (!window.ClashePersonalization) {
       return {
@@ -148,6 +247,7 @@
     if (!feedEl) return;
 
     const state = getSectionState(activeSection);
+    renderPersonalizationContexts();
     if (activeSection === "following" && !state.takes.length && state.loaded) {
       feedEl.innerHTML = `
         <section class="feed-empty-visual" aria-label="No following activity yet">
@@ -168,6 +268,7 @@
     window.ClashlyTakeRenderer.renderTakeList(feedEl, state.takes, {
       currentUserId,
       showAiJudgeAction: true,
+      showRecommendationReason: activeSection === "for-you",
       emptyMessage: activeSection === "following" ? "" : "No takes yet. Be the first to post one.",
     });
 
