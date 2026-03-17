@@ -416,7 +416,7 @@
     if (user && user.id) params.set("id", user.id);
     if (user && user.username) params.set("u", user.username);
     const query = params.toString();
-    return query ? `profile.html?${query}` : "profile.html";
+    return query ? `user.html?${query}` : "user.html";
   }
 
   function renderUsers(users) {
@@ -1074,3 +1074,4 @@
 
   document.addEventListener("DOMContentLoaded", initSearchPage);
 })();
+
