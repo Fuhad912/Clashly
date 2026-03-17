@@ -742,6 +742,19 @@
 /* ── Wide: 1200px + ────────────────────────────────────────── */
 
 @media (min-width: 1200px) {
+  .app-main--home {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .side-column {
+    display: block;
+    position: sticky;
+    top: var(--space-4);
+  }
+
   .profile-feed--grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
