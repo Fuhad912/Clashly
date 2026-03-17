@@ -73,6 +73,7 @@
       .from(PROFILES_TABLE)
       .select("id")
       .eq("username", normalized)
+      .limit(1)
       .maybeSingle();
 
     if (error) {
