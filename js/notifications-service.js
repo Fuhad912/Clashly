@@ -1,11 +1,17 @@
 (function () {
   const NOTIFICATIONS_TABLE = "notifications";
+  const FOLLOWS_TABLE = "follows";
+  const COMMENTS_TABLE = "comments";
+  const COMMENT_LIKES_TABLE = "comment_likes";
+  const BOOKMARKS_TABLE = "bookmarks";
   const TYPES = new Set(["follow", "comment", "reply", "bookmark", "comment_like"]);
   const DEFAULT_LIMIT = 25;
   const MAX_LIMIT = 60;
   const CACHE_TTL_MS = 15_000;
   const FULL_NOTIFICATION_COLUMNS = "id, user_id, actor_id, type, target_id, target_take_id, target_comment_id, is_read, created_at";
   const BASE_NOTIFICATION_COLUMNS = "id, user_id, actor_id, type, target_id, is_read, created_at";
+  const LOCAL_READ_STORAGE_PREFIX = "clashe-notifications-read";
+  const SYNTHETIC_ID_PREFIX = "derived:";
   const notificationsCache = new Map();
 
   function getClientOrThrow() {
@@ -102,6 +108,92 @@
     });
   }
 
+  function getLocalReadStorageKey(userId) {
+    return `${LOCAL_READ_STORAGE_PREFIX}:${String(userId || "").trim()}`;
+  }
+
+  function getLocalReadIds(userId) {
+    const safeUserId = String(userId || "").trim();
+    if (!safeUserId) return new Set();
+
+    try {
+      const raw = window.localStorage.getItem(getLocalReadStorageKey(safeUserId));
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return new Set(Array.isArray(parsed) ? parsed.map((value) => String(value || "").trim()).filter(Boolean) : []);
+    } catch (_error) {
+      return new Set();
+    }
+  }
+
+  function markLocalNotificationsRead(userId, notificationIds) {
+    const safeUserId = String(userId || "").trim();
+    const ids = [...new Set((notificationIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
+    if (!safeUserId || !ids.length) return;
+
+    try {
+      const nextReadIds = getLocalReadIds(safeUserId);
+      ids.forEach((id) => nextReadIds.add(id));
+      window.localStorage.setItem(getLocalReadStorageKey(safeUserId), JSON.stringify(Array.from(nextReadIds)));
+    } catch (_error) {
+      // Ignore storage failures.
+    }
+  }
+
+  function isSyntheticNotificationId(notificationId) {
+    return String(notificationId || "").startsWith(SYNTHETIC_ID_PREFIX);
+  }
+
+  function buildSyntheticNotificationId(input) {
+    return [
+      SYNTHETIC_ID_PREFIX,
+      String(input.type || "").trim(),
+      String(input.actorId || "").trim(),
+      String(input.targetTakeId || "").trim(),
+      String(input.targetCommentId || "").trim(),
+      String(input.createdAt || "").trim(),
+    ].join("|");
+  }
+
+  function createEmptyQueryResult() {
+    return Promise.resolve({ data: [], error: null });
+  }
+
+  async function fetchCommentLikeNotificationRows(client, ownedCommentIds, safeUserId, limit) {
+    if (!ownedCommentIds.length) {
+      return { data: [], error: null };
+    }
+
+    let result = await client
+      .from(COMMENT_LIKES_TABLE)
+      .select("comment_id, user_id, created_at")
+      .in("comment_id", ownedCommentIds)
+      .neq("user_id", safeUserId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (result.error && isMissingColumn(result.error, "created_at")) {
+      result = await client
+        .from(COMMENT_LIKES_TABLE)
+        .select("comment_id, user_id")
+        .in("comment_id", ownedCommentIds)
+        .neq("user_id", safeUserId)
+        .limit(limit);
+
+      if (!result.error) {
+        result = {
+          data: (result.data || []).map((row) => ({
+            ...row,
+            created_at: "",
+          })),
+          error: null,
+        };
+      }
+    }
+
+    return result;
+  }
+
   async function fetchProfilesByIds(userIds) {
     if (!userIds.length) {
       return { profiles: [], error: null };
@@ -150,6 +242,316 @@
     return {
       comments: result.data || [],
       error: result.error,
+    };
+  }
+
+  async function fetchOwnedTakes(userId) {
+    const safeUserId = String(userId || "").trim();
+    if (!safeUserId) {
+      return { takes: [], error: null };
+    }
+
+    const client = getClientOrThrow();
+    const result = await client
+      .from("takes")
+      .select("id, content")
+      .eq("user_id", safeUserId);
+
+    return {
+      takes: result.data || [],
+      error: result.error,
+    };
+  }
+
+  async function fetchOwnedComments(userId) {
+    const safeUserId = String(userId || "").trim();
+    if (!safeUserId) {
+      return { comments: [], error: null };
+    }
+
+    const client = getClientOrThrow();
+    const result = await client
+      .from(COMMENTS_TABLE)
+      .select("id, take_id, parent_id")
+      .eq("user_id", safeUserId);
+
+    return {
+      comments: result.data || [],
+      error: result.error,
+    };
+  }
+
+  function sortNotificationsByCreatedAt(items) {
+    return [...(items || [])].sort((left, right) => {
+      const leftTime = new Date(left && left.created_at ? left.created_at : 0).getTime();
+      const rightTime = new Date(right && right.created_at ? right.created_at : 0).getTime();
+      return rightTime - leftTime;
+    });
+  }
+
+  function buildDerivedNotification(input, actorsById, takesById, localReadIds) {
+    const actorId = String(input.actor_id || "").trim();
+    const targetTakeId = String(input.target_take_id || "").trim();
+    const targetCommentId = String(input.target_comment_id || "").trim();
+    const createdAt = String(input.created_at || "").trim();
+    const take = targetTakeId ? takesById.get(targetTakeId) || null : null;
+    const notification = {
+      id: buildSyntheticNotificationId({
+        type: input.type,
+        actorId,
+        targetTakeId,
+        targetCommentId,
+        createdAt,
+      }),
+      user_id: input.user_id,
+      actor_id: actorId,
+      type: input.type,
+      target_id: input.target_id || targetTakeId || targetCommentId || null,
+      target_take_id: targetTakeId || null,
+      target_comment_id: targetCommentId || null,
+      is_read: localReadIds.has(
+        buildSyntheticNotificationId({
+          type: input.type,
+          actorId,
+          targetTakeId,
+          targetCommentId,
+          createdAt,
+        })
+      ),
+      created_at: createdAt,
+      actor: actorsById.get(actorId) || null,
+      take,
+    };
+
+    return {
+      ...notification,
+      href: buildHref(notification),
+      message: buildMessage(notification),
+      snippet: buildSnippet(notification),
+    };
+  }
+
+  async function fetchDerivedNotifications(userId, limit) {
+    const safeUserId = String(userId || "").trim();
+    if (!safeUserId) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: new Error("User ID is required.") };
+    }
+
+    const [ownedTakesResult, ownedCommentsResult] = await Promise.all([fetchOwnedTakes(safeUserId), fetchOwnedComments(safeUserId)]);
+    if (ownedTakesResult.error) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: ownedTakesResult.error };
+    }
+    if (ownedCommentsResult.error) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: ownedCommentsResult.error };
+    }
+
+    const ownedTakes = ownedTakesResult.takes || [];
+    const ownedComments = ownedCommentsResult.comments || [];
+    const ownedTakeIds = [...new Set(ownedTakes.map((take) => take.id).filter(Boolean))];
+    const ownedCommentIds = [...new Set(ownedComments.map((comment) => comment.id).filter(Boolean))];
+    const ownedCommentsById = new Map(ownedComments.map((comment) => [comment.id, comment]));
+    const overscanLimit = Math.max(limit * 4, 40);
+    const client = getClientOrThrow();
+
+    const [followsResult, commentsResult, repliesResult, commentLikesResult, bookmarksResult] = await Promise.all([
+      client
+        .from(FOLLOWS_TABLE)
+        .select("follower_id, created_at")
+        .eq("following_id", safeUserId)
+        .order("created_at", { ascending: false })
+        .limit(overscanLimit),
+      ownedTakeIds.length
+        ? client
+            .from(COMMENTS_TABLE)
+            .select("id, user_id, take_id, parent_id, created_at")
+            .in("take_id", ownedTakeIds)
+            .is("parent_id", null)
+            .neq("user_id", safeUserId)
+            .order("created_at", { ascending: false })
+            .limit(overscanLimit)
+        : createEmptyQueryResult(),
+      ownedCommentIds.length
+        ? client
+            .from(COMMENTS_TABLE)
+            .select("id, user_id, take_id, parent_id, created_at")
+            .in("parent_id", ownedCommentIds)
+            .neq("user_id", safeUserId)
+            .order("created_at", { ascending: false })
+            .limit(overscanLimit)
+        : createEmptyQueryResult(),
+      ownedCommentIds.length
+        ? fetchCommentLikeNotificationRows(client, ownedCommentIds, safeUserId, overscanLimit)
+        : createEmptyQueryResult(),
+      ownedTakeIds.length
+        ? client
+            .from(BOOKMARKS_TABLE)
+            .select("take_id, user_id, created_at")
+            .in("take_id", ownedTakeIds)
+            .neq("user_id", safeUserId)
+            .order("created_at", { ascending: false })
+            .limit(overscanLimit)
+        : createEmptyQueryResult(),
+    ]);
+
+    const sourceError =
+      followsResult.error ||
+      commentsResult.error ||
+      repliesResult.error ||
+      commentLikesResult.error ||
+      bookmarksResult.error ||
+      null;
+    if (sourceError) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: sourceError };
+    }
+
+    const topLevelComments = commentsResult.data || [];
+    const replies = repliesResult.data || [];
+    const commentLikes = commentLikesResult.data || [];
+    const bookmarks = bookmarksResult.data || [];
+    const actorIds = [
+      ...new Set(
+        []
+          .concat((followsResult.data || []).map((row) => row.follower_id))
+          .concat(topLevelComments.map((row) => row.user_id))
+          .concat(replies.map((row) => row.user_id))
+          .concat(commentLikes.map((row) => row.user_id))
+          .concat(bookmarks.map((row) => row.user_id))
+          .filter(Boolean)
+      ),
+    ];
+
+    const takeIds = [
+      ...new Set(
+        ownedTakeIds
+          .concat(topLevelComments.map((row) => row.take_id))
+          .concat(replies.map((row) => row.take_id))
+          .concat(bookmarks.map((row) => row.take_id))
+          .concat(
+            commentLikes
+              .map((row) => {
+                const ownedComment = ownedCommentsById.get(row.comment_id);
+                return ownedComment ? ownedComment.take_id : "";
+              })
+              .filter(Boolean)
+          )
+          .filter(Boolean)
+      ),
+    ];
+
+    const [profilesResult, takeSnippetsResult] = await Promise.all([fetchProfilesByIds(actorIds), fetchTakesByIds(takeIds)]);
+    if (profilesResult.error) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: profilesResult.error };
+    }
+    if (takeSnippetsResult.error) {
+      return { notifications: [], nextCursor: null, hasMore: false, error: takeSnippetsResult.error };
+    }
+
+    const actorsById = new Map((profilesResult.profiles || []).map((profile) => [profile.id, profile]));
+    const takesById = new Map((takeSnippetsResult.takes || []).map((take) => [take.id, take]));
+    const localReadIds = getLocalReadIds(safeUserId);
+    const notifications = [];
+
+    (followsResult.data || []).forEach((row) => {
+      notifications.push(
+        buildDerivedNotification(
+          {
+            user_id: safeUserId,
+            actor_id: row.follower_id,
+            type: "follow",
+            target_id: row.follower_id,
+            created_at: row.created_at,
+          },
+          actorsById,
+          takesById,
+          localReadIds
+        )
+      );
+    });
+
+    topLevelComments.forEach((row) => {
+      notifications.push(
+        buildDerivedNotification(
+          {
+            user_id: safeUserId,
+            actor_id: row.user_id,
+            type: "comment",
+            target_id: row.take_id,
+            target_take_id: row.take_id,
+            target_comment_id: row.id,
+            created_at: row.created_at,
+          },
+          actorsById,
+          takesById,
+          localReadIds
+        )
+      );
+    });
+
+    replies.forEach((row) => {
+      notifications.push(
+        buildDerivedNotification(
+          {
+            user_id: safeUserId,
+            actor_id: row.user_id,
+            type: "reply",
+            target_id: row.take_id,
+            target_take_id: row.take_id,
+            target_comment_id: row.id,
+            created_at: row.created_at,
+          },
+          actorsById,
+          takesById,
+          localReadIds
+        )
+      );
+    });
+
+    bookmarks.forEach((row) => {
+      notifications.push(
+        buildDerivedNotification(
+          {
+            user_id: safeUserId,
+            actor_id: row.user_id,
+            type: "bookmark",
+            target_id: row.take_id,
+            target_take_id: row.take_id,
+            created_at: row.created_at,
+          },
+          actorsById,
+          takesById,
+          localReadIds
+        )
+      );
+    });
+
+    commentLikes.forEach((row) => {
+      const ownedComment = ownedCommentsById.get(row.comment_id);
+      if (!ownedComment) return;
+      notifications.push(
+        buildDerivedNotification(
+          {
+            user_id: safeUserId,
+            actor_id: row.user_id,
+            type: "comment_like",
+            target_id: row.comment_id,
+            target_take_id: ownedComment.take_id,
+            target_comment_id: row.comment_id,
+            created_at: row.created_at,
+          },
+          actorsById,
+          takesById,
+          localReadIds
+        )
+      );
+    });
+
+    const sortedNotifications = sortNotificationsByCreatedAt(notifications);
+    const limitedNotifications = sortedNotifications.slice(0, limit);
+    return {
+      notifications: limitedNotifications,
+      nextCursor: null,
+      hasMore: sortedNotifications.length > limit,
+      error: null,
     };
   }
 
@@ -338,13 +740,22 @@
         error: null,
       };
 
-      if (!cursor) {
-        setCachedNotifications(cacheKey, payload);
+      if (payload.notifications.length) {
+        if (!cursor) {
+          setCachedNotifications(cacheKey, payload);
+        }
+        return payload;
       }
-      return payload;
     }
 
-    if (!isMissingRpcFunction(rpcResult.error, "get_notifications_page")) {
+    if (rpcResult.error && !isMissingRpcFunction(rpcResult.error, "get_notifications_page")) {
+      const derivedResult = await fetchDerivedNotifications(safeUserId, limit);
+      if (!derivedResult.error) {
+        if (!cursor) {
+          setCachedNotifications(cacheKey, derivedResult);
+        }
+        return derivedResult;
+      }
       return {
         notifications: [],
         nextCursor: null,
@@ -375,6 +786,13 @@
     }
 
     if (result.error) {
+      const derivedResult = await fetchDerivedNotifications(safeUserId, limit);
+      if (!derivedResult.error) {
+        if (!cursor) {
+          setCachedNotifications(cacheKey, derivedResult);
+        }
+        return derivedResult;
+      }
       return { notifications: [], nextCursor: null, hasMore: false, error: result.error };
     }
 
@@ -456,6 +874,21 @@
       error: null,
     };
 
+    if (payload.notifications.length) {
+      if (!cursor) {
+        setCachedNotifications(cacheKey, payload);
+      }
+      return payload;
+    }
+
+    const derivedResult = await fetchDerivedNotifications(safeUserId, limit);
+    if (!derivedResult.error) {
+      if (!cursor) {
+        setCachedNotifications(cacheKey, derivedResult);
+      }
+      return derivedResult;
+    }
+
     if (!cursor) {
       setCachedNotifications(cacheKey, payload);
     }
@@ -469,12 +902,23 @@
       return { error: null };
     }
 
+    const localIds = ids.filter(isSyntheticNotificationId);
+    if (localIds.length) {
+      markLocalNotificationsRead(userId, localIds);
+      invalidateNotificationCacheForUser(userId);
+    }
+
+    const databaseIds = ids.filter((id) => !isSyntheticNotificationId(id));
+    if (!databaseIds.length) {
+      return { error: null };
+    }
+
     const client = getClientOrThrow();
     const result = await client
       .from(NOTIFICATIONS_TABLE)
       .update({ is_read: true })
       .eq("user_id", userId)
-      .in("id", ids);
+      .in("id", databaseIds);
 
     if (!result.error) {
       invalidateNotificationCacheForUser(userId);
