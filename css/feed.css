@@ -560,6 +560,37 @@
   font-size: 0.72rem;
 }
 
+@media (min-width: 641px) {
+  body[data-page="home"] .take-action--vote {
+    min-width: 74px;
+  }
+
+  body[data-page="home"] .take-action--vote .take-action__stack {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "icon count"
+      "label label";
+    column-gap: 6px;
+    row-gap: 3px;
+    justify-items: center;
+    align-items: center;
+  }
+
+  body[data-page="home"] .take-action--vote .take-action__icon {
+    grid-area: icon;
+  }
+
+  body[data-page="home"] .take-action--vote .take-action__count {
+    grid-area: count;
+    min-width: 0;
+  }
+
+  body[data-page="home"] .take-action--vote .take-action__label {
+    grid-area: label;
+  }
+}
+
 /* Hover states */
 .take-action:not(.take-action--vote):hover {
   color: var(--color-text);
