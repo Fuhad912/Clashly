@@ -556,9 +556,13 @@ body.has-onboarding-open {
 
 .onboarding-modal__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
   align-items: start;
+}
+
+.onboarding-modal__intro {
+  min-width: 0;
 }
 
 .onboarding-modal__kicker {
