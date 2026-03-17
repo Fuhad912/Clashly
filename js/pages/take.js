@@ -543,6 +543,7 @@
           throw createResult.error;
         }
 
+        const createdComment = createResult.comment || null;
         const replyTarget = activeReplyTarget ? findCommentById(currentComments, activeReplyTarget.commentId) : null;
         const notificationTargetUserId = replyTarget ? replyTarget.user_id : currentTake.user_id;
         const notificationType = replyTarget ? "reply" : "comment";
@@ -564,6 +565,8 @@
             actorId: currentUserId,
             type: notificationType,
             targetId: currentTake.id,
+            targetTakeId: currentTake.id,
+            targetCommentId: createdComment && createdComment.id ? createdComment.id : "",
           }).catch(() => {});
         }
       } catch (error) {
@@ -646,6 +649,8 @@
               actorId: currentUserId,
               type: "comment_like",
               targetId: commentId,
+              targetTakeId: targetComment.take_id || currentTake.id,
+              targetCommentId: commentId,
             }).catch(() => {});
           }
         } catch (error) {
@@ -763,6 +768,7 @@
         actorId: currentUserId,
         type: "bookmark",
         targetId: currentTake.id,
+        targetTakeId: currentTake.id,
       }).catch(() => {});
     }
 
