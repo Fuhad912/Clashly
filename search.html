@@ -72,6 +72,16 @@
 
         <section id="search-discovery" class="search-discovery">
           <section class="search-panels" aria-label="Discovery prompts">
+            <article id="search-recents-panel" class="search-panel" hidden>
+              <div class="search-panel__bar">
+                <header class="search-panel__head">
+                  <p class="search-panel__eyebrow">Recent</p>
+                  <h3 class="search-panel__title">Pick up where you left off</h3>
+                </header>
+                <button id="search-recents-clear" type="button" class="search-panel__clear" hidden>Clear</button>
+              </div>
+              <div id="search-recents-list" class="search-recents" hidden></div>
+            </article>
             <article class="search-panel">
               <header class="search-panel__head">
                 <p class="search-panel__eyebrow">Hot lanes</p>
