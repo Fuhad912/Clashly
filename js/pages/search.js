@@ -1,4 +1,6 @@
 (function () {
+  const RECENT_SEARCHES_KEY_PREFIX = "clashe-recent-searches";
+  const MAX_RECENT_SEARCHES = 8;
   let currentUserId = "";
   let currentQuery = "";
   let currentTakeResults = [];
@@ -16,6 +18,95 @@
   function getQuery() {
     const params = new URLSearchParams(window.location.search);
     return (params.get("q") || "").trim();
+  }
+
+  function normalizeSearchTerm(value) {
+    return String(value || "").trim();
+  }
+
+  function getRecentSearchesStorageKey() {
+    return `${RECENT_SEARCHES_KEY_PREFIX}:${currentUserId || "guest"}`;
+  }
+
+  function getRecentSearches() {
+    try {
+      const raw = window.localStorage.getItem(getRecentSearchesStorageKey());
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => normalizeSearchTerm(item))
+        .filter(Boolean)
+        .slice(0, MAX_RECENT_SEARCHES);
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  function saveRecentSearches(items) {
+    try {
+      window.localStorage.setItem(getRecentSearchesStorageKey(), JSON.stringify((items || []).slice(0, MAX_RECENT_SEARCHES)));
+    } catch (_error) {
+      // Ignore storage failures.
+    }
+  }
+
+  function addRecentSearch(query) {
+    const normalized = normalizeSearchTerm(query);
+    if (!normalized) return;
+
+    const deduped = getRecentSearches().filter((item) => item.toLowerCase() !== normalized.toLowerCase());
+    deduped.unshift(normalized);
+    saveRecentSearches(deduped);
+  }
+
+  function clearRecentSearches() {
+    saveRecentSearches([]);
+  }
+
+  function renderRecentSearches() {
+    const panelEl = document.getElementById("search-recents-panel");
+    const listEl = document.getElementById("search-recents-list");
+    const clearBtn = document.getElementById("search-recents-clear");
+    if (!panelEl || !listEl || !clearBtn) return;
+
+    const recentSearches = getRecentSearches();
+    const hasRecentSearches = recentSearches.length > 0;
+    panelEl.hidden = !hasRecentSearches;
+    listEl.hidden = !hasRecentSearches;
+    clearBtn.hidden = !hasRecentSearches;
+
+    if (!hasRecentSearches) {
+      listEl.innerHTML = "";
+      return;
+    }
+
+    listEl.innerHTML = recentSearches
+      .map(
+        (term) => `
+          <button
+            type="button"
+            class="search-recents__item"
+            data-recent-search="${window.ClashlyUtils.escapeHtml(term)}"
+            aria-label="Search for ${window.ClashlyUtils.escapeHtml(term)} again"
+          >
+            <span class="search-recents__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8v4l2.8 2"></path>
+                <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              </svg>
+            </span>
+            <span>${window.ClashlyUtils.escapeHtml(term)}</span>
+          </button>
+        `
+      )
+      .join("");
+  }
+
+  function goToSearchQuery(query) {
+    const normalized = normalizeSearchTerm(query);
+    const nextUrl = normalized ? `search.html?q=${encodeURIComponent(normalized)}` : "search.html";
+    window.location.href = nextUrl;
   }
 
   function syncSearchInput() {
@@ -39,6 +130,9 @@
     const discoveryEl = document.getElementById("search-discovery");
     if (!discoveryEl) return;
     discoveryEl.hidden = !isVisible;
+    if (isVisible) {
+      renderRecentSearches();
+    }
   }
 
   function setTrendingState(message, type) {
@@ -686,6 +780,7 @@
     setDiscoveryVisibility(!currentQuery);
 
     if (!currentQuery) {
+      renderRecentSearches();
       currentTakeResults = [];
       renderTakes([]);
       renderUsers([]);
@@ -737,6 +832,8 @@
       const hasResults = currentTakeResults.length || (result.users || []).length || (result.hashtags || []).length;
       renderEmptyState(Boolean(hasResults));
       setState("", "");
+      addRecentSearch(currentQuery);
+      renderRecentSearches();
 
       if (currentUserId && window.ClashePersonalization) {
         window.ClashePersonalization.recordSearch(currentUserId, currentQuery).catch(() => {});
@@ -765,8 +862,27 @@
           const input = searchForm.querySelector("input[name='q']");
           if (!(input instanceof HTMLInputElement)) return;
           const nextQuery = String(input.value || "").trim();
-          const nextUrl = nextQuery ? `search.html?q=${encodeURIComponent(nextQuery)}` : "search.html";
-          window.location.href = nextUrl;
+          goToSearchQuery(nextQuery);
+        });
+      }
+
+      const recentsListEl = document.getElementById("search-recents-list");
+      if (recentsListEl) {
+        recentsListEl.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const trigger = target.closest("[data-recent-search]");
+          if (!trigger) return;
+          const recentSearch = trigger.getAttribute("data-recent-search") || "";
+          goToSearchQuery(recentSearch);
+        });
+      }
+
+      const clearRecentsBtn = document.getElementById("search-recents-clear");
+      if (clearRecentsBtn) {
+        clearRecentsBtn.addEventListener("click", () => {
+          clearRecentSearches();
+          renderRecentSearches();
         });
       }
 
@@ -780,6 +896,7 @@
 
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
+      renderRecentSearches();
       await loadTrendingTopics();
       await Promise.all([loadResults(), loadExploreLanes()]);
     } finally {
