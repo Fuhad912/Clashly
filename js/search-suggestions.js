@@ -70,7 +70,7 @@
               const params = new URLSearchParams();
               if (user && user.id) params.set("id", user.id);
               if (user && user.username) params.set("u", user.username);
-              const href = params.toString() ? `profile.html?${params.toString()}` : "profile.html";
+              const href = params.toString() ? `user.html?${params.toString()}` : "user.html";
               return `
               <a class="search-suggestions__item" href="${href}">
                 ${renderUserAvatar(user)}
@@ -312,3 +312,4 @@
     attach,
   };
 })();
+
