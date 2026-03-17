@@ -243,7 +243,7 @@
   function bindEvents() {
     document.addEventListener("click", async (event) => {
       const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
+      if (!(target instanceof Element)) return;
 
       const closeTrigger = target.closest("[data-close-share-modal='true']");
       if (closeTrigger) {
