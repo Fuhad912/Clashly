@@ -463,6 +463,17 @@
     setFeedState(activeFeedTakes.length ? "" : isSavedTab ? "No saved takes yet." : "No takes yet.", "");
   }
 
+  function syncProfileTakeState(takeId) {
+    const feedEl = document.getElementById("profile-feed");
+    if (!feedEl || !window.ClashlyTakeRenderer || typeof window.ClashlyTakeRenderer.syncTakeState !== "function") return;
+    const targetTake =
+      currentTakes.find((take) => take.id === takeId) ||
+      currentSavedTakes.find((take) => take.id === takeId) ||
+      null;
+    if (!targetTake) return;
+    window.ClashlyTakeRenderer.syncTakeState(feedEl, targetTake);
+  }
+
   async function loadMoreActiveTab() {
     if (!currentUser || !currentProfile) return;
 
@@ -981,16 +992,20 @@
 
     const target = currentTakes.find((take) => take.id === input.takeId);
     if (!target || target.vote_loading) return;
+    const previousVote = target.vote ? { ...target.vote } : null;
+    const optimisticVote = window.ClashlyTakes && typeof window.ClashlyTakes.previewVoteSummary === "function"
+      ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
+      : previousVote;
 
-    updateTakeVoteState(input.takeId, { vote_loading: true });
-    renderProfileFeed();
+    updateTakeVoteState(input.takeId, { vote_loading: true, vote: optimisticVote || target.vote });
+    syncProfileTakeState(input.takeId);
 
     try {
       const voteResult = await window.ClashlyTakes.submitVote({
         userId: currentUser.id,
         takeId: input.takeId,
         voteType: input.voteType,
-        currentVote: target.vote ? target.vote.user_vote : "",
+        currentVote: previousVote ? previousVote.user_vote : "",
       });
 
       if (voteResult.error) throw voteResult.error;
@@ -1000,11 +1015,14 @@
         vote: voteResult.vote,
       });
       renderProfileInsights();
-      renderProfileFeed();
+      syncProfileTakeState(input.takeId);
       setFeedState("", "");
     } catch (error) {
-      updateTakeVoteState(input.takeId, { vote_loading: false });
-      renderProfileFeed();
+      updateTakeVoteState(input.takeId, {
+        vote_loading: false,
+        vote: previousVote || target.vote,
+      });
+      syncProfileTakeState(input.takeId);
       throw error;
     }
   }
@@ -1022,6 +1040,10 @@
       currentTakes.find((take) => take.id === input.takeId) ||
       currentSavedTakes.find((take) => take.id === input.takeId);
     if (!target) return;
+    const previousBookmarked = Boolean(target.bookmarked);
+
+    updateTakeBookmarkState(input.takeId, !previousBookmarked);
+    syncProfileTakeState(input.takeId);
 
     try {
       const result = await window.ClashlyTakes.toggleBookmark({
@@ -1043,9 +1065,11 @@
       }
 
       updateTakeBookmarkState(input.takeId, result.bookmarked);
-      renderProfileFeed();
+      syncProfileTakeState(input.takeId);
       setFeedState("", "");
     } catch (error) {
+      updateTakeBookmarkState(input.takeId, previousBookmarked);
+      syncProfileTakeState(input.takeId);
       throw error;
     }
   }
