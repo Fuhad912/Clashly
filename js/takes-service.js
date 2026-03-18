@@ -10,6 +10,7 @@
   const TAKE_IMAGES_BUCKET = "take-images";
   const MAX_CONTENT_LENGTH = 180;
   const MAX_HASHTAGS_PER_TAKE = 3;
+  const MAX_IMAGES_PER_TAKE = 2;
   const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -136,6 +137,25 @@
     return { valid: true, error: "" };
   }
 
+  function validateImageFiles(files) {
+    const safeFiles = Array.from(files || []).filter(Boolean);
+    if (safeFiles.length > MAX_IMAGES_PER_TAKE) {
+      return {
+        valid: false,
+        error: `You can upload up to ${MAX_IMAGES_PER_TAKE} images per take.`,
+      };
+    }
+
+    for (const file of safeFiles) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        return validation;
+      }
+    }
+
+    return { valid: true, error: "" };
+  }
+
   function normalizeVoteType(voteType) {
     const safe = String(voteType || "").toLowerCase();
     if (safe === "agree" || safe === "disagree") return safe;
@@ -179,6 +199,77 @@
     };
   }
 
+  async function uploadTakeImages(files, userId) {
+    const safeFiles = Array.from(files || []).filter(Boolean).slice(0, MAX_IMAGES_PER_TAKE);
+    if (!safeFiles.length) {
+      return { imageUrls: [], error: null };
+    }
+
+    const uploadResults = await Promise.all(safeFiles.map((file) => uploadTakeImage(file, userId)));
+    const failedResult = uploadResults.find((result) => result.error);
+    if (failedResult) {
+      return {
+        imageUrls: [],
+        error: failedResult.error,
+      };
+    }
+
+    return {
+      imageUrls: uploadResults.map((result) => result.imageUrl).filter(Boolean),
+      error: null,
+    };
+  }
+
+  function normalizeTakeImageUrls(value) {
+    const safeUrls = [];
+    const pushUrl = (url) => {
+      const safeUrl = String(url || "").trim();
+      if (!safeUrl || safeUrls.includes(safeUrl)) return;
+      safeUrls.push(safeUrl);
+    };
+
+    if (Array.isArray(value)) {
+      value.forEach(pushUrl);
+      return safeUrls.slice(0, MAX_IMAGES_PER_TAKE);
+    }
+
+    const rawValue = String(value || "").trim();
+    if (!rawValue) {
+      return [];
+    }
+
+    if (rawValue.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(pushUrl);
+          return safeUrls.slice(0, MAX_IMAGES_PER_TAKE);
+        }
+      } catch (_error) {
+        // Fall back to legacy single URL handling.
+      }
+    }
+
+    pushUrl(rawValue);
+    return safeUrls.slice(0, MAX_IMAGES_PER_TAKE);
+  }
+
+  function serializeTakeImageUrls(imageUrls) {
+    const safeUrls = normalizeTakeImageUrls(imageUrls);
+    if (!safeUrls.length) return null;
+    if (safeUrls.length === 1) return safeUrls[0];
+    return JSON.stringify(safeUrls);
+  }
+
+  function normalizeTakeMedia(take) {
+    const imageUrls = normalizeTakeImageUrls(take && take.image_url);
+    return {
+      ...(take || {}),
+      image_url: imageUrls[0] || "",
+      image_urls: imageUrls,
+    };
+  }
+
   async function createTake(input) {
     const client = getClientOrThrow();
     const cleanContent = sanitizeContent(input.content);
@@ -192,18 +283,23 @@
       return { take: null, error: new Error(categoryError) };
     }
 
-    const imageValidation = validateImageFile(input.imageFile);
+    const imageFiles = Array.isArray(input && input.imageFiles)
+      ? input.imageFiles
+      : input && input.imageFile
+        ? [input.imageFile]
+        : [];
+    const imageValidation = validateImageFiles(imageFiles);
     if (!imageValidation.valid) {
       return { take: null, error: new Error(imageValidation.error) };
     }
 
-    let imageUrl = "";
-    if (input.imageFile) {
-      const uploadResult = await uploadTakeImage(input.imageFile, input.userId);
+    let imageUrls = [];
+    if (imageFiles.length) {
+      const uploadResult = await uploadTakeImages(imageFiles, input.userId);
       if (uploadResult.error) {
         return { take: null, error: uploadResult.error };
       }
-      imageUrl = uploadResult.imageUrl;
+      imageUrls = uploadResult.imageUrls || [];
     }
 
     const insertResult = await client
@@ -211,7 +307,7 @@
       .insert({
         user_id: input.userId,
         content: cleanContent,
-        image_url: imageUrl || null,
+        image_url: serializeTakeImageUrls(imageUrls),
       })
       .select("id, user_id, content, image_url, created_at")
       .single();
@@ -240,11 +336,11 @@
     }
 
     return {
-      take: {
+      take: normalizeTakeMedia({
         ...(insertResult.data || {}),
         hashtags: hashtagResult.hashtags || [],
         category: categoryResult.category || null,
-      },
+      }),
       error: null,
     };
   }
@@ -650,7 +746,7 @@
             }
           : null;
 
-      return {
+      return normalizeTakeMedia({
         id: row.id,
         user_id: row.user_id,
         content: row.content || "",
@@ -666,7 +762,7 @@
         bookmarked: Boolean(row.bookmarked),
         hashtags,
         category,
-      };
+      });
     });
   }
 
@@ -723,7 +819,7 @@
     const recencyScore = Math.max(0, 72 - ageHours) * 1.25;
     const engagementScore = totalVotes * 4.5;
     const qualityBoost = Math.min(18, take.content.length / 10);
-    const imageBoost = take.image_url ? 4 : 0;
+    const imageBoost = normalizeTakeImageUrls(take && take.image_url).length ? 4 : 0;
     return recencyScore + engagementScore + qualityBoost + imageBoost;
   }
 
@@ -774,10 +870,10 @@
 
     return rows.map((take) => {
       const profile = profileMap.get(take.user_id) || null;
-      return {
+      return normalizeTakeMedia({
         ...take,
         profile,
-      };
+      });
     });
   }
 
@@ -1645,6 +1741,7 @@
     TAKE_CATEGORIES_TABLE,
     MAX_CONTENT_LENGTH,
     MAX_HASHTAGS_PER_TAKE,
+    MAX_IMAGES_PER_TAKE,
     MAX_IMAGE_SIZE_BYTES,
     MIN_CONTROVERSIAL_VOTES,
     extractHashtags,
@@ -1652,6 +1749,7 @@
     validateHashtags,
     validateCategory,
     validateImageFile,
+    validateImageFiles,
     validateVoteType,
     createTake,
     fetchFeedTakes,
