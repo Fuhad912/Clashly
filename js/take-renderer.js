@@ -39,6 +39,16 @@
     return `<span class="take-owner-badge" title="Owner tools coming soon">Owner</span>`;
   }
 
+  function getTakeImageUrls(take) {
+    if (Array.isArray(take && take.image_urls) && take.image_urls.length) {
+      return take.image_urls.filter(Boolean).slice(0, 2);
+    }
+    if (take && take.image_url) {
+      return [String(take.image_url)];
+    }
+    return [];
+  }
+
   function getProfileHref(take, currentUserId) {
     if (!take || !take.user_id) return "profile.html";
 
@@ -336,7 +346,8 @@
     const takeHref = take && take.id ? `take.html?id=${encodeURIComponent(take.id)}${takeHrefSuffix}` : "take.html";
     const relativeTime = window.ClashlyUtils.formatRelativeTime(take.created_at);
     const avatarMarkup = getAvatarMarkup(take.profile);
-    const hasImage = Boolean(take.image_url);
+    const imageUrls = getTakeImageUrls(take);
+    const hasImage = imageUrls.length > 0;
     const ownerBadge = getOwnerBadge(take, options.currentUserId);
     const openLink = options.showOpenLink
       ? options && options.toggleOpenAction
@@ -366,13 +377,31 @@
       </button>
     `;
     const mediaMarkup = hasImage
-      ? `
-        <div class="take-item__media">
-          <img src="${window.ClashlyUtils.escapeHtml(take.image_url)}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
-            username
-          )}" loading="lazy" />
-        </div>
-      `
+      ? imageUrls.length === 1
+        ? `
+          <div class="take-item__media">
+            <img src="${window.ClashlyUtils.escapeHtml(imageUrls[0])}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
+              username
+            )}" loading="lazy" />
+          </div>
+        `
+        : `
+          <div class="take-item__media take-item__media--split">
+            ${imageUrls
+              .map(
+                (imageUrl, index) => `
+                  <div class="take-item__media-slot">
+                    <img
+                      src="${window.ClashlyUtils.escapeHtml(imageUrl)}"
+                      alt="Take image ${index + 1} from ${window.ClashlyUtils.escapeHtml(username)}"
+                      loading="lazy"
+                    />
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `
       : "";
 
     return `
