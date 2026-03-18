@@ -439,6 +439,25 @@ body[data-page="home"] .feed-head__inner {
   display: block;
 }
 
+.take-item__media--split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.take-item__media--split .take-item__media-slot {
+  min-width: 0;
+  background: var(--color-surface-soft);
+}
+
+.take-item__media--split .take-item__media-slot + .take-item__media-slot {
+  border-left: var(--line);
+}
+
+.take-item__media--split .take-item__media-slot img {
+  height: 100%;
+  max-height: 420px;
+}
+
 /* ── Action wrapper ────────────────────────────────────────── */
 
 .take-item__actions-wrapper {
