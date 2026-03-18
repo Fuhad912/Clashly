@@ -1,4 +1,4 @@
-const VERSION = "clashe-pwa-v5";
+const VERSION = "clashe-pwa-v6";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 
