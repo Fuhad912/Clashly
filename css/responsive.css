@@ -733,6 +733,24 @@
     font-size: clamp(1rem, 0.92rem + 0.45vw, 1.3rem);
   }
 
+  .feed-stream .take-item__media,
+  .profile-feed:not(.profile-feed--grid) .take-item__media,
+  .take-detail .take-item__media,
+  #search-takes-stream .take-item__media {
+    display: grid;
+    place-items: center;
+    background: var(--color-surface-soft);
+  }
+
+  .feed-stream .take-item__media img,
+  .profile-feed:not(.profile-feed--grid) .take-item__media img,
+  .take-detail .take-item__media img,
+  #search-takes-stream .take-item__media img {
+    width: 100%;
+    object-fit: contain;
+    background: var(--color-surface-soft);
+  }
+
   .theme-toggle {
     right: calc(50% - var(--max-width-narrow) / 2 - 52px);
     bottom: 28px;
