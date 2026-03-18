@@ -28,6 +28,7 @@
   let onboardingActiveUserId = "";
   let onboardingShownForUserId = "";
   let deferredInstallPrompt = null;
+  let createModalSelectedFiles = [];
   let installPromptConsumed = false;
   let serviceWorkerRegistration = null;
   let pwaInitialized = false;
@@ -987,10 +988,26 @@
       .join("");
   }
 
+  function mergeSelectedFiles(existingFiles, incomingFiles, maxFiles) {
+    const merged = [];
+    const seenKeys = new Set();
+
+    [...Array.from(existingFiles || []), ...Array.from(incomingFiles || [])].forEach((file) => {
+      if (!file) return;
+      const key = [file.name, file.size, file.lastModified].join(":");
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      merged.push(file);
+    });
+
+    return merged.slice(0, Math.max(0, Number(maxFiles || 0)) || 0);
+  }
+
   function resetCreateForm() {
     const { form } = getCreateModalElements();
     if (!form) return;
     form.reset();
+    createModalSelectedFiles = [];
     resetCreatePreview();
     updateCreateCount();
     setCreateStatus("", "");
@@ -1062,20 +1079,22 @@
     elements.imageInput.addEventListener("change", () => {
       const files = Array.from(elements.imageInput.files || []).filter(Boolean);
       if (!files.length) {
-        resetCreatePreview();
         return;
       }
 
-      const validation = window.ClashlyTakes.validateImageFiles(files);
+      const maxFiles = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
+      const mergedFiles = mergeSelectedFiles(createModalSelectedFiles, files, maxFiles + files.length);
+      const validation = window.ClashlyTakes.validateImageFiles(mergedFiles);
       if (!validation.valid) {
         elements.imageInput.value = "";
-        resetCreatePreview();
         setCreateStatus(validation.error, "error");
         return;
       }
 
+      createModalSelectedFiles = mergedFiles;
       resetCreatePreview();
-      renderCreatePreview(files);
+      renderCreatePreview(createModalSelectedFiles);
+      elements.imageInput.value = "";
       setCreateStatus("", "");
     });
 
@@ -1096,7 +1115,7 @@
         return;
       }
 
-      const imageFiles = Array.from(elements.imageInput.files || []).filter(Boolean);
+      const imageFiles = createModalSelectedFiles.slice();
       const imageValidation = window.ClashlyTakes.validateImageFiles(imageFiles);
       if (!imageValidation.valid) {
         setCreateStatus(imageValidation.error, "error");
