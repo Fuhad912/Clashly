@@ -84,24 +84,41 @@
       .join("");
   }
 
-  function setupImagePreview(input, preview) {
+  function mergeSelectedFiles(existingFiles, incomingFiles, maxFiles) {
+    const merged = [];
+    const seenKeys = new Set();
+
+    [...Array.from(existingFiles || []), ...Array.from(incomingFiles || [])].forEach((file) => {
+      if (!file) return;
+      const key = [file.name, file.size, file.lastModified].join(":");
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      merged.push(file);
+    });
+
+    return merged.slice(0, Math.max(0, Number(maxFiles || 0)) || 0);
+  }
+
+  function setupImagePreview(input, preview, state) {
     input.addEventListener("change", () => {
       const files = Array.from(input.files || []).filter(Boolean);
       if (!files.length) {
-        resetPreview(preview);
         return;
       }
 
-      const imageValidation = window.ClashlyTakes.validateImageFiles(files);
+      const maxFiles = Number(window.ClashlyTakes.MAX_IMAGES_PER_TAKE || 2);
+      const mergedFiles = mergeSelectedFiles(state.selectedFiles, files, maxFiles + files.length);
+      const imageValidation = window.ClashlyTakes.validateImageFiles(mergedFiles);
       if (!imageValidation.valid) {
         input.value = "";
-        resetPreview(preview);
         setStatus(imageValidation.error, "error");
         return;
       }
 
+      state.selectedFiles = mergedFiles;
       resetPreview(preview);
-      renderPreview(preview, files);
+      renderPreview(preview, state.selectedFiles);
+      input.value = "";
       setStatus("", "");
     });
   }
@@ -119,6 +136,10 @@
 
     if (!textarea || !countEl || !categorySelect || !imageInput || !preview || !form || !submitBtn) return;
 
+    const composerState = {
+      selectedFiles: [],
+    };
+
     const maxChars = window.ClashlyTakes.MAX_CONTENT_LENGTH;
     updateCount(textarea, countEl, maxChars);
     textarea.addEventListener("input", () => {
@@ -126,7 +147,7 @@
       updateCount(textarea, countEl, maxChars);
     });
     categorySelect.addEventListener("change", () => setStatus("", ""));
-    setupImagePreview(imageInput, preview);
+    setupImagePreview(imageInput, preview, composerState);
     await populateCategories(categorySelect);
 
     form.addEventListener("submit", async (event) => {
@@ -146,7 +167,7 @@
         return;
       }
 
-      const imageFiles = Array.from(imageInput.files || []).filter(Boolean);
+      const imageFiles = composerState.selectedFiles.slice();
       const imageValidation = window.ClashlyTakes.validateImageFiles(imageFiles);
       if (!imageValidation.valid) {
         setStatus(imageValidation.error, "error");
@@ -175,6 +196,7 @@
         }
 
         form.reset();
+        composerState.selectedFiles = [];
         resetPreview(preview);
         updateCount(textarea, countEl, maxChars);
         setStatus("Take posted. Redirecting to feed...", "success");
