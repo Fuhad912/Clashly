@@ -742,12 +742,16 @@
     background: var(--color-surface-soft);
   }
 
-  .feed-stream .take-item__media img,
-  .profile-feed:not(.profile-feed--grid) .take-item__media img,
-  .take-detail .take-item__media img,
-  #search-takes-stream .take-item__media img {
-    width: 100%;
-    object-fit: contain;
+  .feed-stream .take-item__media:not(.take-item__media--split) img,
+  .profile-feed:not(.profile-feed--grid) .take-item__media:not(.take-item__media--split) img,
+  .take-detail .take-item__media:not(.take-item__media--split) img,
+  #search-takes-stream .take-item__media:not(.take-item__media--split) img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: min(72vh, 560px);
+    margin: 0 auto;
     background: var(--color-surface-soft);
   }
 
