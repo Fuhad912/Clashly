@@ -698,13 +698,9 @@
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       window.addEventListener("hashchange", handleHashChange);
 
-      // Resolve session and fetch feed in parallel — session is only needed to
-      // personalise votes/bookmarks, the public feed can start fetching immediately
-      const [sessionState] = await Promise.all([
-        window.ClashlySession.resolveSession(),
-        loadFeed({ append: false, skipSkeleton: true }),
-      ]);
+      const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      await loadFeed({ append: false, skipSkeleton: true });
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
