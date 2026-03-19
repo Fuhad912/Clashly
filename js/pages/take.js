@@ -865,7 +865,7 @@
         : previousVote;
     currentTake = {
       ...currentTake,
-      vote_loading: false,
+      vote_loading: true,
       vote: optimisticVote || currentTake.vote,
     };
     syncCurrentTakeState();
