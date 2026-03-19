@@ -997,7 +997,7 @@
       ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
       : previousVote;
 
-    updateTakeVoteState(input.takeId, { vote_loading: false, vote: optimisticVote || target.vote });
+    updateTakeVoteState(input.takeId, { vote_loading: true, vote: optimisticVote || target.vote });
     syncProfileTakeState(input.takeId);
 
     try {
@@ -1010,9 +1010,13 @@
 
       if (voteResult.error) throw voteResult.error;
 
+      const reconciledVote = voteResult.vote ? {
+        ...voteResult.vote,
+        user_vote: optimisticVote ? optimisticVote.user_vote : voteResult.vote.user_vote,
+      } : optimisticVote;
       updateTakeVoteState(input.takeId, {
         vote_loading: false,
-        vote: voteResult.vote,
+        vote: reconciledVote || target.vote,
       });
       renderProfileInsights();
       syncProfileTakeState(input.takeId);
