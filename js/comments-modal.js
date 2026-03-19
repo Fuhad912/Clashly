@@ -443,11 +443,10 @@
 
       if (voteResult.error) throw voteResult.error;
 
-      // Trust optimistic user_vote — server re-read can be stale due to replication lag
-      const reconciledVote = voteResult.vote ? {
-        ...voteResult.vote,
-        user_vote: optimisticVote ? optimisticVote.user_vote : voteResult.vote.user_vote,
-      } : optimisticVote;
+      const reconciledVote =
+        window.ClashlyTakes && typeof window.ClashlyTakes.resolveSubmittedVoteSummary === "function"
+          ? window.ClashlyTakes.resolveSubmittedVoteSummary(optimisticVote, voteResult.vote)
+          : optimisticVote || voteResult.vote;
       currentTake = {
         ...currentTake,
         vote_loading: false,
@@ -459,7 +458,7 @@
         new CustomEvent(UPDATE_EVENT, {
           detail: {
             takeId: currentTake.id,
-            vote: voteResult.vote,
+            vote: reconciledVote || currentTake.vote,
           },
         })
       );
