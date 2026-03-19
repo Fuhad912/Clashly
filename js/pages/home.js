@@ -258,6 +258,7 @@
 
     const state = getSectionState(activeSection);
     const append = Boolean(options && options.append);
+    const skipSkeleton = Boolean(options && options.skipSkeleton);
     if (state.loading) return;
     if (append && !state.hasMore) return;
 
@@ -269,10 +270,12 @@
       state.meta = null;
       setFeedState("", "");
       // Show skeleton immediately — hides blank screen while DB responds
-      if (typeof window.clasheShowFeedSkeleton === "function") {
-        window.clasheShowFeedSkeleton("feed-stream", 5);
-      } else {
-        feedEl.innerHTML = "";
+      if (!skipSkeleton) {
+        if (typeof window.clasheShowFeedSkeleton === "function") {
+          window.clasheShowFeedSkeleton("feed-stream", 5);
+        } else {
+          feedEl.innerHTML = "";
+        }
       }
     }
 
@@ -672,8 +675,12 @@
       if (!window.ClashlyTakes || !window.ClashlyTakeRenderer || !window.ClashlySession) return;
 
       activeSection = getHashSection();
-      const sessionState = await window.ClashlySession.resolveSession();
-      currentUserId = sessionState.user ? sessionState.user.id : "";
+
+      // Show skeleton immediately — before session round-trip — so users see content structure instantly
+      const feedEl = document.getElementById("feed-stream");
+      if (feedEl && typeof window.clasheShowFeedSkeleton === "function") {
+        window.clasheShowFeedSkeleton("feed-stream", 5);
+      }
 
       bindHomeSwitch();
       bindInfiniteScroll();
@@ -686,7 +693,14 @@
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       window.addEventListener("hashchange", handleHashChange);
-      await loadFeed({ append: false });
+
+      // Resolve session and fetch feed in parallel — session is only needed to
+      // personalise votes/bookmarks, the public feed can start fetching immediately
+      const [sessionState] = await Promise.all([
+        window.ClashlySession.resolveSession(),
+        loadFeed({ append: false, skipSkeleton: true }),
+      ]);
+      currentUserId = sessionState.user ? sessionState.user.id : "";
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
