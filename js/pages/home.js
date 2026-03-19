@@ -5,7 +5,6 @@
   const AI_JUDGE_MIN_COMMENTS = 6;
   let activeSection = "for-you";
   let currentUserId = "";
-  let currentProfile = null;
   let scrollQueued = false;
   const sectionState = {
     "for-you": {
@@ -133,146 +132,54 @@
     updateHeader();
   }
 
-  function renderHomeHeaderProfile() {
-    const profileLinkEl = document.getElementById("home-head-profile-link");
-    const avatarEl = document.getElementById("home-head-avatar");
-    if (!profileLinkEl || !avatarEl) return;
-
-    const username = currentProfile && currentProfile.username ? String(currentProfile.username) : "";
-    const params = new URLSearchParams();
-    if (currentUserId) params.set("id", currentUserId);
-    if (username) params.set("u", username);
-    profileLinkEl.href = params.toString() ? `profile.html?${params.toString()}` : "profile.html";
-
-    if (currentProfile && currentProfile.avatar_url) {
-      avatarEl.innerHTML = `<img src="${window.ClashlyUtils.escapeHtml(currentProfile.avatar_url)}" alt="@${window.ClashlyUtils.escapeHtml(
-        username || "profile"
-      )} avatar" />`;
-      return;
-    }
-
-    avatarEl.innerHTML = "";
-    avatarEl.textContent = window.ClashlyProfiles && typeof window.ClashlyProfiles.initialsFromUsername === "function"
-      ? window.ClashlyProfiles.initialsFromUsername(username || "cl")
-      : "CL";
-  }
-
-  function bindHomeHeaderActions() {
-    const upgradeBtn = document.getElementById("home-head-upgrade");
-    if (!upgradeBtn) return;
-
-    upgradeBtn.addEventListener("click", async () => {
-      if (window.ClashlyPWA && typeof window.ClashlyPWA.promptInstall === "function") {
-        try {
-          const result = await window.ClashlyPWA.promptInstall();
-          if (result && result.status && result.status !== "unavailable") {
-            return;
-          }
-        } catch (_error) {
-          // Fall back to settings if install prompting is unavailable.
-        }
-      }
-
-      window.location.href = "settings.html";
-    });
-  }
-
-  function toHashtagHref(tag) {
-    return `hashtag.html?tag=${encodeURIComponent(String(tag || "").replace(/^#/, ""))}`;
-  }
-
-  function toCategoryHref(slug) {
-    return `category.html?category=${encodeURIComponent(String(slug || ""))}`;
-  }
-
   function renderPersonalizationContexts() {
-    const bannerEl = document.getElementById("home-personalization-banner");
+    const sideColumnEl = document.querySelector(".side-column");
+    const sidePersonalizationEl = document.getElementById("home-side-personalization");
     const sideTitleEl = document.getElementById("home-side-personalization-title");
     const sideTextEl = document.getElementById("home-side-personalization-text");
     const sideChipsEl = document.getElementById("home-side-personalization-chips");
+    const sideContextEl = document.getElementById("home-side-context");
     const contextTitleEl = document.getElementById("home-side-context-title");
     const contextTextEl = document.getElementById("home-side-context-text");
     const contextMetaEl = document.getElementById("home-side-context-meta");
     const state = getSectionState(activeSection);
-    const meta = state.meta || null;
-    const isForYou = activeSection === "for-you";
+    const isFollowing = activeSection === "following";
 
-    if (bannerEl) {
-      if (!isForYou) {
-        bannerEl.hidden = true;
-        bannerEl.innerHTML = "";
-      } else {
-        const chips = (meta && Array.isArray(meta.reasonChips) ? meta.reasonChips : []).slice(0, 4);
-        bannerEl.hidden = false;
-        bannerEl.innerHTML = `
-          <div class="feed-personalization__copy">
-            <p class="feed-personalization__eyebrow">For you</p>
-            <h2 class="feed-personalization__title">${window.ClashlyUtils.escapeHtml(
-              (meta && meta.headline) || "Your mix is learning from how you move."
-            )}</h2>
-            <p class="feed-personalization__text">${window.ClashlyUtils.escapeHtml(
-              (meta && meta.supporting) || "Recent searches, votes, and saves are shaping what rises first."
-            )}</p>
-          </div>
-          <div class="feed-personalization__chips">
-            ${chips
-              .map((chip) => {
-                const label = String((chip && chip.label) || "").trim();
-                if (!label) return "";
-                const href = chip.kind === "category" ? toCategoryHref(label) : toHashtagHref(label);
-                return `<a class="feed-personalization__chip" href="${href}">${window.ClashlyUtils.escapeHtml(label)}</a>`;
-              })
-              .join("")}
-          </div>
-        `;
-      }
-    }
+    if (sideColumnEl) sideColumnEl.hidden = false;
+    if (sidePersonalizationEl) sidePersonalizationEl.hidden = false;
+    if (sideContextEl) sideContextEl.hidden = false;
 
     if (sideTitleEl) {
-      sideTitleEl.textContent = isForYou ? "Your lane" : "Following";
+      sideTitleEl.textContent = isFollowing ? "Following feed" : "Debate pulse";
     }
     if (sideTextEl) {
-      sideTextEl.textContent = isForYou
-        ? (meta && meta.supporting) || "Your searches, votes, saves, and opens start teaching the feed what to surface."
-        : "This tab stays close to the people you already follow, without personalization mixing in extra posts.";
+      sideTextEl.textContent = isFollowing
+        ? "This tab stays focused on posts from accounts you already follow."
+        : "The wider feed keeps moving with fresh takes from across Clashe.";
     }
     if (sideChipsEl) {
-      const categoryChips = meta && meta.topInterests && Array.isArray(meta.topInterests.categories) ? meta.topInterests.categories : [];
-      const hashtagChips = meta && meta.topInterests && Array.isArray(meta.topInterests.hashtags) ? meta.topInterests.hashtags : [];
-      const chips = isForYou
-        ? [
-            ...categoryChips.slice(0, 2).map((slug) => ({ kind: "category", label: slug })),
-            ...hashtagChips.slice(0, 4).map((tag) => ({ kind: "hashtag", label: `#${tag}` })),
-          ].slice(0, 6)
-        : [];
-      sideChipsEl.innerHTML = chips.length
-        ? chips
-            .map((chip) => {
-              const href = chip.kind === "category" ? toCategoryHref(chip.label) : toHashtagHref(chip.label);
-              return `<a class="topic-chip" href="${href}">${window.ClashlyUtils.escapeHtml(chip.label)}</a>`;
-            })
-            .join("")
-        : `<span class="side-block__muted">${isForYou ? "No strong signals yet." : "Switch back to For you for personalized picks."}</span>`;
+      const chips = isFollowing
+        ? ["Following", "Accounts", "Replies"]
+        : ["For you", "Fresh takes", "Debates"];
+      sideChipsEl.innerHTML = chips.map((label) => `<span class="topic-chip">${window.ClashlyUtils.escapeHtml(label)}</span>`).join("");
     }
     if (contextTitleEl) {
-      contextTitleEl.textContent = isForYou ? "Why this mix" : "How it works";
+      contextTitleEl.textContent = "How home works";
     }
     if (contextTextEl) {
-      contextTextEl.textContent = isForYou
-        ? (meta && meta.headline) || "Familiar topics and fresh posts are blended together so the feed feels learned, not random."
-        : "Following stays chronological and relationship-led, so it feels closer to a classic social timeline.";
+      contextTextEl.textContent = isFollowing
+        ? "Use Following when you want a tighter stream shaped by the people you chose."
+        : "Use For you when you want the main feed to surface what is active right now.";
     }
     if (contextMetaEl) {
       const stats = [];
-      if (isForYou && meta && meta.totalSignals) {
-        stats.push(`${meta.totalSignals} active signals`);
-      }
       if (state && Array.isArray(state.takes) && state.takes.length) {
         stats.push(`${state.takes.length} posts loaded`);
       }
-      contextMetaEl.innerHTML = stats.length
-        ? stats.map((stat) => `<span class="topic-chip topic-chip--muted">${window.ClashlyUtils.escapeHtml(stat)}</span>`).join("")
-        : "";
+      stats.push(isFollowing ? "Relationship-led" : "Discovery-led");
+      contextMetaEl.innerHTML = stats
+        .map((stat) => `<span class="topic-chip topic-chip--muted">${window.ClashlyUtils.escapeHtml(stat)}</span>`)
+        .join("");
     }
   }
 
@@ -313,7 +220,6 @@
     window.ClashlyTakeRenderer.renderTakeList(feedEl, state.takes, {
       currentUserId,
       showAiJudgeAction: true,
-      showRecommendationReason: activeSection === "for-you",
       emptyMessage: activeSection === "following" ? "" : "No takes yet. Be the first to post one.",
     });
 
@@ -336,6 +242,14 @@
       onStatus: setFeedState,
       onAiJudge: handleAiJudge,
     });
+  }
+
+  function syncActiveTakeState(takeId) {
+    const feedEl = document.getElementById("feed-stream");
+    if (!feedEl || !window.ClashlyTakeRenderer || typeof window.ClashlyTakeRenderer.syncTakeState !== "function") return;
+    const targetTake = getSectionState(activeSection).takes.find((take) => take.id === takeId) || null;
+    if (!targetTake) return;
+    window.ClashlyTakeRenderer.syncTakeState(feedEl, targetTake);
   }
 
   async function loadFeed(options) {
@@ -499,7 +413,7 @@
       vote: detail.vote,
       vote_loading: false,
     }));
-    renderCurrentFeed();
+    syncActiveTakeState(detail.takeId);
   }
 
   function handleTakeBookmarkUpdated(event) {
@@ -509,7 +423,7 @@
       ...take,
       bookmarked: detail.bookmarked,
     }));
-    renderCurrentFeed();
+    syncActiveTakeState(detail.takeId);
   }
 
   async function handleVote(input) {
@@ -524,19 +438,25 @@
     const activeState = getSectionState(activeSection);
     const target = activeState.takes.find((take) => take.id === input.takeId);
     if (!target || target.vote_loading) return;
+    const previousVote = target.vote ? { ...target.vote } : null;
+    const optimisticVote = window.ClashlyTakes && typeof window.ClashlyTakes.previewVoteSummary === "function"
+      ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
+      : previousVote;
 
+    // Apply optimistic update instantly — no full re-render
     updateTakeInAllSections(input.takeId, (take) => ({
       ...take,
-      vote_loading: true,
+      vote_loading: false,
+      vote: optimisticVote || take.vote,
     }));
-    renderCurrentFeed();
+    syncActiveTakeState(input.takeId);
 
     try {
       const voteResult = await window.ClashlyTakes.submitVote({
         userId: currentUserId,
         takeId: input.takeId,
         voteType: input.voteType,
-        currentVote: target.vote ? target.vote.user_vote : "",
+        currentVote: previousVote ? previousVote.user_vote : "",
       });
 
       if (voteResult.error) throw voteResult.error;
@@ -545,19 +465,21 @@
         window.ClashePersonalization.recordTakeEngagement(currentUserId, target, "vote").catch(() => {});
       }
 
+      // Reconcile with server result — surgical DOM update only
       updateTakeInAllSections(input.takeId, (take) => ({
         ...take,
         vote_loading: false,
         vote: voteResult.vote,
       }));
-      renderCurrentFeed();
-      setFeedState("", "");
+      syncActiveTakeState(input.takeId);
     } catch (error) {
+      // Roll back on failure
       updateTakeInAllSections(input.takeId, (take) => ({
         ...take,
         vote_loading: false,
+        vote: previousVote || take.vote,
       }));
-      renderCurrentFeed();
+      syncActiveTakeState(input.takeId);
       throw error;
     }
   }
@@ -572,6 +494,14 @@
     }
 
     const target = getSectionState(activeSection).takes.find((take) => take.id === input.takeId) || null;
+    const previousBookmarked = Boolean(target && target.bookmarked);
+
+    // Apply optimistic update instantly — no full re-render
+    updateTakeInAllSections(input.takeId, (take) => ({
+      ...take,
+      bookmarked: !previousBookmarked,
+    }));
+    syncActiveTakeState(input.takeId);
 
     try {
       const result = await window.ClashlyTakes.toggleBookmark({
@@ -596,13 +526,19 @@
         }).catch(() => {});
       }
 
+      // Reconcile with server result — surgical DOM update only
       updateTakeInAllSections(input.takeId, (take) => ({
         ...take,
         bookmarked: result.bookmarked,
       }));
-      renderCurrentFeed();
-      setFeedState("", "");
+      syncActiveTakeState(input.takeId);
     } catch (error) {
+      // Roll back on failure
+      updateTakeInAllSections(input.takeId, (take) => ({
+        ...take,
+        bookmarked: previousBookmarked,
+      }));
+      syncActiveTakeState(input.takeId);
       throw error;
     }
   }
@@ -738,13 +674,7 @@
       activeSection = getHashSection();
       const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
-      if (currentUserId && window.ClashlyProfiles && typeof window.ClashlyProfiles.getProfileById === "function") {
-        const profileResult = await window.ClashlyProfiles.getProfileById(currentUserId);
-        currentProfile = profileResult && !profileResult.error ? profileResult.profile || null : null;
-      }
 
-      renderHomeHeaderProfile();
-      bindHomeHeaderActions();
       bindHomeSwitch();
       bindInfiniteScroll();
       bindAiJudgeReasonModal();
