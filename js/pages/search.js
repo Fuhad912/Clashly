@@ -958,14 +958,14 @@
       vote: detail.vote,
       vote_loading: false,
     });
-    renderTakes(currentTakeResults);
+    syncSearchTakeState(detail.takeId);
   }
 
   function handleTakeBookmarkUpdated(event) {
     const detail = event.detail || {};
     if (!detail.takeId || typeof detail.bookmarked !== "boolean") return;
     updateTakeBookmarkState(detail.takeId, detail.bookmarked);
-    renderTakes(currentTakeResults);
+    syncSearchTakeState(detail.takeId);
   }
 
   async function loadResults() {
@@ -1049,9 +1049,6 @@
     try {
       if (!window.ClashlySearch || !window.ClashlyTakeRenderer || !window.ClashlySession) return;
 
-      const sessionState = await window.ClashlySession.resolveSession();
-      currentUserId = sessionState.user ? sessionState.user.id : "";
-
       const searchForm = document.getElementById("search-page-form");
       if (searchForm) {
         searchForm.addEventListener("submit", (event) => {
@@ -1094,8 +1091,16 @@
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       renderRecentSearches();
-      await loadTrendingTopics();
-      await Promise.all([loadResults(), loadExploreLanes()]);
+
+      // Parallelise session resolve with all data fetches — session is only needed for
+      // personalised vote/bookmark state, discovery content can load immediately
+      const [sessionState] = await Promise.all([
+        window.ClashlySession.resolveSession(),
+        loadTrendingTopics(),
+        loadResults(),
+        loadExploreLanes(),
+      ]);
+      currentUserId = sessionState.user ? sessionState.user.id : "";
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
