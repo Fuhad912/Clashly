@@ -216,7 +216,8 @@
     setFeedState("", "");
   }
 
-  async function loadFeed() {
+  async function loadFeed(options) {
+    const skipSkeleton = Boolean(options && options.skipSkeleton);
     const safeCategorySlug = getQueryCategory();
     const feedEl = document.getElementById("category-feed-stream");
     if (!feedEl) return;
@@ -232,10 +233,12 @@
     setFeedState("", "");
 
     // Show skeleton immediately while category data loads
-    if (typeof window.clasheShowFeedSkeleton === "function") {
-      window.clasheShowFeedSkeleton("category-feed-stream", 5);
-    } else {
-      feedEl.innerHTML = "";
+    if (!skipSkeleton) {
+      if (typeof window.clasheShowFeedSkeleton === "function") {
+        window.clasheShowFeedSkeleton("category-feed-stream", 5);
+      } else {
+        feedEl.innerHTML = "";
+      }
     }
 
     try {
@@ -277,26 +280,33 @@
       vote: detail.vote,
       vote_loading: false,
     });
-    renderFeed();
+    syncCategoryTakeState(detail.takeId);
   }
 
   function handleTakeBookmarkUpdated(event) {
     const detail = event.detail || {};
     if (!detail.takeId || typeof detail.bookmarked !== "boolean") return;
     updateTakeBookmarkState(detail.takeId, detail.bookmarked);
-    renderFeed();
+    syncCategoryTakeState(detail.takeId);
   }
 
   async function initCategoryPage() {
     try {
       if (!window.ClashlyTakes || !window.ClashlyTakeRenderer || !window.ClashlySession || !window.ClashlyCategories) return;
 
-      const sessionState = await window.ClashlySession.resolveSession();
-      currentUserId = sessionState.user ? sessionState.user.id : "";
+      // Show skeleton immediately before any async work
+      if (typeof window.clasheShowFeedSkeleton === "function") {
+        window.clasheShowFeedSkeleton("category-feed-stream", 5);
+      }
 
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
-      await loadFeed();
+
+      const [sessionState] = await Promise.all([
+        window.ClashlySession.resolveSession(),
+        loadFeed({ skipSkeleton: true }),
+      ]);
+      currentUserId = sessionState.user ? sessionState.user.id : "";
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
