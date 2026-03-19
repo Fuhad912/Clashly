@@ -1010,10 +1010,10 @@
 
       if (voteResult.error) throw voteResult.error;
 
-      const reconciledVote = voteResult.vote ? {
-        ...voteResult.vote,
-        user_vote: optimisticVote ? optimisticVote.user_vote : voteResult.vote.user_vote,
-      } : optimisticVote;
+      const reconciledVote =
+        window.ClashlyTakes && typeof window.ClashlyTakes.resolveSubmittedVoteSummary === "function"
+          ? window.ClashlyTakes.resolveSubmittedVoteSummary(optimisticVote, voteResult.vote)
+          : optimisticVote || voteResult.vote;
       updateTakeVoteState(input.takeId, {
         vote_loading: false,
         vote: reconciledVote || target.vote,
