@@ -305,11 +305,9 @@
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       bindInfiniteScroll();
 
-      const [sessionState] = await Promise.all([
-        window.ClashlySession.resolveSession(),
-        loadFeed({ append: false, skipSkeleton: true }),
-      ]);
+      const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      await loadFeed({ append: false, skipSkeleton: true });
 
       if (currentUserId && currentTag && window.ClashePersonalization) {
         window.ClashePersonalization.recordHashtagVisit(currentUserId, currentTag).catch(() => {});
