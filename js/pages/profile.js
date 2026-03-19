@@ -997,7 +997,7 @@
       ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
       : previousVote;
 
-    updateTakeVoteState(input.takeId, { vote_loading: true, vote: optimisticVote || target.vote });
+    updateTakeVoteState(input.takeId, { vote_loading: false, vote: optimisticVote || target.vote });
     syncProfileTakeState(input.takeId);
 
     try {
