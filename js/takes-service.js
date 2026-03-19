@@ -573,9 +573,7 @@
     let userVote = safeCurrentVote;
 
     if (safeCurrentVote === safeNextVoteType) {
-      if (safeCurrentVote === "agree") agree = Math.max(0, agree - 1);
-      if (safeCurrentVote === "disagree") disagree = Math.max(0, disagree - 1);
-      userVote = "";
+      return createVoteSummary(agree, disagree, userVote);
     } else {
       if (safeCurrentVote === "agree") agree = Math.max(0, agree - 1);
       if (safeCurrentVote === "disagree") disagree = Math.max(0, disagree - 1);
@@ -1648,15 +1646,7 @@
 
     const currentVote = normalizeVoteType(input.currentVote);
     if (currentVote && currentVote === safeVoteType) {
-      const deleteResult = await client
-        .from(VOTES_TABLE)
-        .delete()
-        .eq("user_id", input.userId)
-        .eq("take_id", input.takeId);
-
-      if (deleteResult.error) {
-        return { vote: defaultVoteSummary(), error: deleteResult.error };
-      }
+      return fetchVoteSummaryForTake(input.takeId, input.userId);
     } else {
       const upsertResult = await client.from(VOTES_TABLE).upsert(
         {
