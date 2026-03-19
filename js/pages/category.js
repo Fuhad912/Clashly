@@ -306,11 +306,9 @@
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
 
-      const [sessionState] = await Promise.all([
-        window.ClashlySession.resolveSession(),
-        loadFeed({ skipSkeleton: true }),
-      ]);
+      const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      await loadFeed({ skipSkeleton: true });
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
