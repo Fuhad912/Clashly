@@ -160,9 +160,14 @@
         throw voteResult.error;
       }
 
+      // Trust optimistic user_vote — server re-read can be stale due to replication lag
+      const reconciledVote = voteResult.vote ? {
+        ...voteResult.vote,
+        user_vote: optimisticVote ? optimisticVote.user_vote : voteResult.vote.user_vote,
+      } : optimisticVote;
       updateTakeVoteState(input.takeId, {
         vote_loading: false,
-        vote: voteResult.vote,
+        vote: reconciledVote,
       });
       syncCategoryTakeState(input.takeId);
       setFeedState("", "");
