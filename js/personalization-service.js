@@ -1,7 +1,35 @@
 (function () {
   const SIGNALS_TABLE = "user_interest_signals";
+  const COMMENTS_TABLE = "comments";
+  const VOTES_TABLE = "votes";
+  const FOLLOWS_TABLE = "follows";
   const MAX_BUCKET_SIZE = 40;
   const MAX_SEARCH_TOKENS = 6;
+  const MAX_FOLLOWED_USERS_FOR_SOCIAL_SIGNALS = 150;
+  const FOR_YOU_WEIGHTS = {
+    recencyWindowHours: 30,
+    recencyDecayPerHour: 0.72,
+    voteWeight: 0.32,
+    commentWeight: 1.3,
+    replyWeight: 1.55,
+    exchangeWeight: 2.15,
+    participantWeight: 0.8,
+    recentCommentWeight: 0.95,
+    controversyWeight: 2.4,
+    mediaWeight: 0.7,
+    categoryWeight: 2.1,
+    hashtagWeight: 1.45,
+    authorWeight: 1.15,
+    searchWeight: 0.72,
+    bookmarkWeight: 2.2,
+    followedAuthorWeight: 3.2,
+    followedVoteWeight: 0.95,
+    followedCommentWeight: 1.1,
+    followedExchangeWeight: 1.5,
+    engagementShelfLifeWeight: 0.42,
+    discussionReasonThreshold: 5.5,
+    personalizationSoftCap: 14,
+  };
   const STOPWORDS = new Set([
     "the",
     "and",
@@ -70,6 +98,60 @@
     const safeKey = normalizeSignalKey(key);
     if (!safeKey) return;
     bucket[safeKey] = Number(bucket[safeKey] || 0) + Number(amount || 0);
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, Number(value)));
+  }
+
+  function normalizeCount(value) {
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric) || numeric < 0) return 0;
+    return Math.floor(numeric);
+  }
+
+  function getTakeAgeHours(take) {
+    const createdAt = take && take.created_at ? new Date(take.created_at).getTime() : 0;
+    if (!createdAt || !Number.isFinite(createdAt)) return 999;
+    return Math.max(0.15, (Date.now() - createdAt) / 36e5);
+  }
+
+  function getTakeHashtagKeys(take) {
+    return (take && Array.isArray(take.hashtags) ? take.hashtags : [])
+      .map((tag) => normalizeSignalKey(typeof tag === "string" ? tag : tag && tag.tag ? tag.tag : ""))
+      .filter(Boolean);
+  }
+
+  function getTakeMediaKind(take) {
+    const imageUrls =
+      take && Array.isArray(take.image_urls) && take.image_urls.length
+        ? take.image_urls
+        : take && take.image_url
+          ? [take.image_url]
+          : [];
+    return imageUrls.length ? "image" : "text";
+  }
+
+  function createEmptyDiscussionMetrics() {
+    return {
+      totalComments: 0,
+      rootComments: 0,
+      replyCount: 0,
+      exchangeCount: 0,
+      recentComments: 0,
+      uniqueParticipants: 0,
+      followedComments: 0,
+      followedExchanges: 0,
+    };
+  }
+
+  function createEmptyRankingContext(takes) {
+    const takeIds = Array.isArray(takes) ? takes.map((take) => String(take && take.id || "")).filter(Boolean) : [];
+    return {
+      followedAuthorIds: new Set(),
+      followedVoteCountByTakeId: new Map(takeIds.map((takeId) => [takeId, 0])),
+      discussionByTakeId: new Map(takeIds.map((takeId) => [takeId, createEmptyDiscussionMetrics()])),
+    };
   }
 
   function normalizeTokens(input) {
@@ -359,9 +441,131 @@
     };
   }
 
+  async function fetchRankingContext(userId, takes) {
+    const safeTakes = Array.isArray(takes) ? takes : [];
+    const context = createEmptyRankingContext(safeTakes);
+    const takeIds = safeTakes.map((take) => String(take && take.id || "")).filter(Boolean);
+    if (!takeIds.length) return context;
+
+    try {
+      const client = getClientOrThrow();
+      const commentsPromise = client
+        .from(COMMENTS_TABLE)
+        .select("id, take_id, user_id, parent_id, created_at")
+        .in("take_id", takeIds);
+
+      let followedUserIds = [];
+      if (userId) {
+        const followsResult = await client
+          .from(FOLLOWS_TABLE)
+          .select("following_id")
+          .eq("follower_id", userId)
+          .limit(MAX_FOLLOWED_USERS_FOR_SOCIAL_SIGNALS);
+
+        if (followsResult.error) {
+          throw followsResult.error;
+        }
+
+        followedUserIds = [...new Set((followsResult.data || []).map((row) => row.following_id).filter(Boolean))];
+        context.followedAuthorIds = new Set(followedUserIds);
+      }
+
+      const followedVotesPromise =
+        followedUserIds.length > 0
+          ? client
+              .from(VOTES_TABLE)
+              .select("take_id, user_id")
+              .in("take_id", takeIds)
+              .in("user_id", followedUserIds)
+          : Promise.resolve({ data: [], error: null });
+
+      const [commentsResult, followedVotesResult] = await Promise.all([commentsPromise, followedVotesPromise]);
+      if (commentsResult.error) {
+        throw commentsResult.error;
+      }
+      if (followedVotesResult.error) {
+        throw followedVotesResult.error;
+      }
+
+      const followedUserIdSet = context.followedAuthorIds;
+      const commentRows = commentsResult.data || [];
+      const commentById = new Map(commentRows.filter((row) => row && row.id).map((row) => [row.id, row]));
+      const participantSets = new Map();
+      const recentCutoffMs = Date.now() - 18 * 36e5;
+
+      takeIds.forEach((takeId) => {
+        participantSets.set(takeId, new Set());
+      });
+
+      commentRows.forEach((row) => {
+        const takeId = String(row && row.take_id || "");
+        if (!takeId || !context.discussionByTakeId.has(takeId)) return;
+        const metrics = context.discussionByTakeId.get(takeId) || createEmptyDiscussionMetrics();
+        metrics.totalComments += 1;
+        if (row.parent_id) {
+          metrics.replyCount += 1;
+        } else {
+          metrics.rootComments += 1;
+        }
+
+        if (row.user_id) {
+          participantSets.get(takeId).add(row.user_id);
+          if (followedUserIdSet.has(row.user_id)) {
+            metrics.followedComments += 1;
+          }
+        }
+
+        const createdAtMs = row.created_at ? new Date(row.created_at).getTime() : 0;
+        if (createdAtMs && Number.isFinite(createdAtMs) && createdAtMs >= recentCutoffMs) {
+          metrics.recentComments += 1;
+        }
+      });
+
+      commentRows.forEach((row) => {
+        const takeId = String(row && row.take_id || "");
+        if (!takeId || !row.parent_id || !context.discussionByTakeId.has(takeId)) return;
+        const parent = commentById.get(row.parent_id);
+        if (!parent || parent.take_id !== row.take_id) return;
+        if (!parent.user_id || !row.user_id || parent.user_id === row.user_id) return;
+
+        const metrics = context.discussionByTakeId.get(takeId) || createEmptyDiscussionMetrics();
+        metrics.exchangeCount += 1;
+        if (followedUserIdSet.has(row.user_id) || followedUserIdSet.has(parent.user_id)) {
+          metrics.followedExchanges += 1;
+        }
+      });
+
+      context.discussionByTakeId.forEach((metrics, takeId) => {
+        metrics.uniqueParticipants = Number((participantSets.get(takeId) || new Set()).size);
+      });
+
+      (followedVotesResult.data || []).forEach((row) => {
+        const takeId = String(row && row.take_id || "");
+        if (!takeId || !context.followedVoteCountByTakeId.has(takeId)) return;
+        context.followedVoteCountByTakeId.set(
+          takeId,
+          Number(context.followedVoteCountByTakeId.get(takeId) || 0) + 1
+        );
+      });
+    } catch (error) {
+      console.error("[Clashe] For You ranking context failed", error);
+    }
+
+    return context;
+  }
+
   function formatReasonLabel(kind, value, take) {
     if (kind === "fresh") {
       return "Fresh on your feed";
+    }
+    if (kind === "following") {
+      return "From someone you follow";
+    }
+    if (kind === "social") {
+      return "People you follow are in this debate";
+    }
+    if (kind === "discussion") {
+      return "Active debate right now";
     }
     if (!value) return "";
     if (kind === "author") {
@@ -381,8 +585,30 @@
     return String(value);
   }
 
-  function buildTakeReason(take, state) {
+  function buildTakeReason(take, state, rankingContext) {
     if (!take) return null;
+    const discussionMetrics =
+      rankingContext && rankingContext.discussionByTakeId
+        ? rankingContext.discussionByTakeId.get(String(take.id || "")) || createEmptyDiscussionMetrics()
+        : createEmptyDiscussionMetrics();
+    const followedVoteCount =
+      rankingContext && rankingContext.followedVoteCountByTakeId
+        ? Number(rankingContext.followedVoteCountByTakeId.get(String(take.id || "")) || 0)
+        : 0;
+
+    if (rankingContext && rankingContext.followedAuthorIds && rankingContext.followedAuthorIds.has(take.user_id)) {
+      return {
+        kind: "following",
+        label: formatReasonLabel("following", "", take),
+      };
+    }
+
+    if (followedVoteCount > 0 || discussionMetrics.followedComments > 0) {
+      return {
+        kind: "social",
+        label: formatReasonLabel("social", "", take),
+      };
+    }
 
     let bestKind = "";
     let bestValue = "";
@@ -427,6 +653,17 @@
     });
 
     if (!bestKind) {
+      const discussionScore =
+        discussionMetrics.replyCount * FOR_YOU_WEIGHTS.replyWeight +
+        discussionMetrics.exchangeCount * FOR_YOU_WEIGHTS.exchangeWeight +
+        discussionMetrics.recentComments * FOR_YOU_WEIGHTS.recentCommentWeight;
+      if (discussionScore >= FOR_YOU_WEIGHTS.discussionReasonThreshold) {
+        return {
+          kind: "discussion",
+          label: formatReasonLabel("discussion", "", take),
+        };
+      }
+
       return {
         kind: "fresh",
         label: formatReasonLabel("fresh", "", take),
@@ -443,18 +680,39 @@
   function diversifyRankedTakes(takes) {
     const pool = Array.isArray(takes) ? takes.slice() : [];
     const ranked = [];
-    const authorSeen = new Map();
-    const categorySeen = new Map();
 
     while (pool.length) {
       let bestIndex = 0;
       let bestScore = -Infinity;
 
       pool.forEach((take, index) => {
-        const authorPenalty = Number(authorSeen.get(take.user_id) || 0) * 4.5;
+        const recentWindow = ranked.slice(-3);
         const categoryKey = take && take.category && take.category.slug ? take.category.slug : "";
-        const categoryPenalty = Number(categorySeen.get(categoryKey) || 0) * 2.8;
-        const adjustedScore = Number(take.for_you_score || 0) - authorPenalty - categoryPenalty - index * 0.015;
+        const mediaKind = getTakeMediaKind(take);
+        const primaryHashtag = getTakeHashtagKeys(take)[0] || "";
+        let diversityPenalty = index * 0.015;
+
+        recentWindow.forEach((recentTake, windowIndex) => {
+          const distanceFactor = 1 / (windowIndex + 1);
+          const recentCategoryKey =
+            recentTake && recentTake.category && recentTake.category.slug ? recentTake.category.slug : "";
+          const recentPrimaryHashtag = getTakeHashtagKeys(recentTake)[0] || "";
+
+          if (recentTake && recentTake.user_id && recentTake.user_id === take.user_id) {
+            diversityPenalty += 6.2 * distanceFactor;
+          }
+          if (categoryKey && recentCategoryKey && categoryKey === recentCategoryKey) {
+            diversityPenalty += 3.4 * distanceFactor;
+          }
+          if (primaryHashtag && recentPrimaryHashtag && primaryHashtag === recentPrimaryHashtag) {
+            diversityPenalty += 2.5 * distanceFactor;
+          }
+          if (getTakeMediaKind(recentTake) === mediaKind) {
+            diversityPenalty += 1.1 * distanceFactor;
+          }
+        });
+
+        const adjustedScore = Number(take.for_you_score || 0) - diversityPenalty;
         if (adjustedScore > bestScore) {
           bestScore = adjustedScore;
           bestIndex = index;
@@ -463,13 +721,6 @@
 
       const [chosen] = pool.splice(bestIndex, 1);
       ranked.push(chosen);
-      if (chosen && chosen.user_id) {
-        authorSeen.set(chosen.user_id, Number(authorSeen.get(chosen.user_id) || 0) + 1);
-      }
-      const categoryKey = chosen && chosen.category && chosen.category.slug ? chosen.category.slug : "";
-      if (categoryKey) {
-        categorySeen.set(categoryKey, Number(categorySeen.get(categoryKey) || 0) + 1);
-      }
     }
 
     return ranked;
@@ -494,60 +745,83 @@
       headline: summary.hasSignals ? "Your mix is learning from how you move." : "Your For you feed starts simple and sharp.",
       supporting: summary.hasSignals
         ? leadReason || "Recent votes, saves, searches, and topic trails are shaping this feed."
-        : "Vote, save, search, and open threads to train the mix around your side of the debate.",
+        : leadReason || "Fresh posts and active debates are steering this feed right now.",
     };
   }
 
-  function scoreTake(take, state) {
+  function scoreTake(take, state, rankingContext, signalSummary) {
     const vote = take.vote || {};
-    const totalVotes = Number(vote.total_votes || 0);
-    const ageHours = Math.max(0.2, (Date.now() - new Date(take.created_at).getTime()) / 36e5);
-    const recencyScore = Math.max(0, 18 - ageHours);
-    let score = recencyScore + Math.min(totalVotes, 40) * 0.4;
+    const totalVotes = normalizeCount(vote.total_votes);
+    const agreeVotes = normalizeCount(vote.agree_count);
+    const disagreeVotes = normalizeCount(vote.disagree_count);
+    const ageHours = getTakeAgeHours(take);
+    const takeId = String(take && take.id || "");
+    const discussionMetrics =
+      rankingContext && rankingContext.discussionByTakeId
+        ? rankingContext.discussionByTakeId.get(takeId) || createEmptyDiscussionMetrics()
+        : createEmptyDiscussionMetrics();
+    const totalComments = Math.max(normalizeCount(take.comment_count), normalizeCount(discussionMetrics.totalComments));
+    const controversyScore = totalVotes > 1 ? 1 - Math.abs(agreeVotes - disagreeVotes) / totalVotes : 0;
+    const engagementScore =
+      Math.min(totalVotes, 45) * FOR_YOU_WEIGHTS.voteWeight +
+      Math.min(totalComments, 22) * FOR_YOU_WEIGHTS.commentWeight +
+      Math.min(discussionMetrics.replyCount, 16) * FOR_YOU_WEIGHTS.replyWeight +
+      Math.min(discussionMetrics.exchangeCount, 10) * FOR_YOU_WEIGHTS.exchangeWeight +
+      Math.min(discussionMetrics.uniqueParticipants, 10) * FOR_YOU_WEIGHTS.participantWeight +
+      Math.min(discussionMetrics.recentComments, 10) * FOR_YOU_WEIGHTS.recentCommentWeight +
+      controversyScore * FOR_YOU_WEIGHTS.controversyWeight;
+    const recencyScore = Math.max(0, FOR_YOU_WEIGHTS.recencyWindowHours - ageHours) * FOR_YOU_WEIGHTS.recencyDecayPerHour;
+    let score = recencyScore + engagementScore + Math.min(engagementScore, 20) * Math.max(0, 1 - ageHours / 72) * FOR_YOU_WEIGHTS.engagementShelfLifeWeight;
 
-    if (take.category && take.category.slug) {
-      score += Number(state.categories[normalizeSignalKey(take.category.slug)] || 0) * 2.8;
+    if (getTakeMediaKind(take) === "image") {
+      score += FOR_YOU_WEIGHTS.mediaWeight;
     }
 
-    (take.hashtags || []).forEach((tag) => {
-      const normalized = normalizeSignalKey(typeof tag === "string" ? tag : tag && tag.tag ? tag.tag : "");
-      score += Number(state.hashtags[normalized] || 0) * 1.85;
+    const personalizationStrength =
+      signalSummary && signalSummary.hasSignals
+        ? clamp(signalSummary.totalSignals / FOR_YOU_WEIGHTS.personalizationSoftCap, 0.35, 1)
+        : 0;
+
+    if (take.category && take.category.slug) {
+      score += Number(state.categories[normalizeSignalKey(take.category.slug)] || 0) * FOR_YOU_WEIGHTS.categoryWeight * personalizationStrength;
+    }
+
+    getTakeHashtagKeys(take).forEach((normalized) => {
+      score += Number(state.hashtags[normalized] || 0) * FOR_YOU_WEIGHTS.hashtagWeight * personalizationStrength;
     });
 
     if (take.user_id) {
-      score += Number(state.authors[take.user_id] || 0) * 1.2;
+      score += Number(state.authors[take.user_id] || 0) * FOR_YOU_WEIGHTS.authorWeight * personalizationStrength;
     }
 
     const content = String(take.content || "").toLowerCase();
     Object.entries(state.searchTerms).forEach(([token, weight]) => {
       if (token && content.includes(token)) {
-        score += Number(weight) * 0.9;
+        score += Number(weight) * FOR_YOU_WEIGHTS.searchWeight * personalizationStrength;
       }
     });
 
     if (take.bookmarked) {
-      score += 2.5;
+      score += FOR_YOU_WEIGHTS.bookmarkWeight;
     }
+
+    if (rankingContext && rankingContext.followedAuthorIds && rankingContext.followedAuthorIds.has(take.user_id)) {
+      score += FOR_YOU_WEIGHTS.followedAuthorWeight;
+    }
+
+    const followedVoteCount =
+      rankingContext && rankingContext.followedVoteCountByTakeId
+        ? Number(rankingContext.followedVoteCountByTakeId.get(takeId) || 0)
+        : 0;
+    score += followedVoteCount * FOR_YOU_WEIGHTS.followedVoteWeight;
+    score += discussionMetrics.followedComments * FOR_YOU_WEIGHTS.followedCommentWeight;
+    score += discussionMetrics.followedExchanges * FOR_YOU_WEIGHTS.followedExchangeWeight;
 
     return score;
   }
 
   async function rankForYou(takes, userId) {
     const safeTakes = Array.isArray(takes) ? takes.slice() : [];
-    if (!userId) {
-      return {
-        takes: safeTakes,
-        meta: {
-          hasSignals: false,
-          topInterests: { categories: [], hashtags: [], authors: [], searchTerms: [] },
-          reasonChips: [],
-          headline: "Your For you feed starts simple and sharp.",
-          supporting: "Vote, save, search, and open threads to train the mix around your side of the debate.",
-        },
-      };
-    }
-
-    const state = await hydrateUserState(userId);
     if (!safeTakes.length) {
       return {
         takes: [],
@@ -555,12 +829,22 @@
       };
     }
 
+    const [state, rankingContext] = await Promise.all([
+      userId ? hydrateUserState(userId) : Promise.resolve(createEmptyState()),
+      fetchRankingContext(userId, safeTakes),
+    ]);
+    const signalSummary = userId ? getSignalSummary(userId) : {
+      hasSignals: false,
+      totalSignals: 0,
+      topInterests: { categories: [], hashtags: [], authors: [], searchTerms: [] },
+    };
+
     const ranked = diversifyRankedTakes(
       safeTakes
       .map((take) => ({
         ...take,
-        for_you_score: scoreTake(take, state),
-        for_you_reason: buildTakeReason(take, state),
+        for_you_score: scoreTake(take, state, rankingContext, signalSummary),
+        for_you_reason: buildTakeReason(take, state, rankingContext),
       }))
       .sort((left, right) => {
         const scoreDiff = Number(right.for_you_score || 0) - Number(left.for_you_score || 0);
