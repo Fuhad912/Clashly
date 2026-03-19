@@ -1,4 +1,4 @@
-(function () {
+](function () {
   const SIGNALS_TABLE = "user_interest_signals";
   const COMMENTS_TABLE = "comments";
   const VOTES_TABLE = "votes";
@@ -29,6 +29,19 @@
     engagementShelfLifeWeight: 0.42,
     discussionReasonThreshold: 5.5,
     personalizationSoftCap: 14,
+    debateInactiveVotesMax: 3,
+    debateInactiveCommentsMax: 1,
+    debateUnsettledMinVotes: 6,
+    debateUnsettledMinComments: 3,
+    debateUnsettledClosenessThreshold: 0.72,
+    debateSettledClosenessThreshold: 0.38,
+    debateUnsettledBoost: 3.4,
+    debateOngoingWeight: 0.24,
+    earlyDebateMinComments: 2,
+    earlyDebateMaxComments: 10,
+    earlyDebateMaxVotes: 18,
+    earlyDebateMaxAgeHours: 30,
+    earlyDebateBoost: 1.85,
   };
   const STOPWORDS = new Set([
     "the",
@@ -142,6 +155,98 @@
       uniqueParticipants: 0,
       followedComments: 0,
       followedExchanges: 0,
+    };
+  }
+
+  function getVoteCloseness(totalVotes, agreeVotes, disagreeVotes) {
+    const safeTotalVotes = normalizeCount(totalVotes);
+    if (!safeTotalVotes) return 0;
+    return clamp(1 - Math.abs(normalizeCount(agreeVotes) - normalizeCount(disagreeVotes)) / safeTotalVotes, 0, 1);
+  }
+
+  function determineDebateState(take, discussionMetrics) {
+    const vote = take && take.vote ? take.vote : {};
+    const totalVotes = normalizeCount(vote.total_votes);
+    const agreeVotes = normalizeCount(vote.agree_count);
+    const disagreeVotes = normalizeCount(vote.disagree_count);
+    const totalComments = Math.max(
+      normalizeCount(take && take.comment_count),
+      normalizeCount(discussionMetrics && discussionMetrics.totalComments)
+    );
+    const replyCount = normalizeCount(discussionMetrics && discussionMetrics.replyCount);
+    const exchangeCount = normalizeCount(discussionMetrics && discussionMetrics.exchangeCount);
+    const closeness = getVoteCloseness(totalVotes, agreeVotes, disagreeVotes);
+    const ongoingDiscussion = totalComments >= 3 || replyCount >= 2 || exchangeCount >= 1;
+
+    if (
+      totalVotes <= FOR_YOU_WEIGHTS.debateInactiveVotesMax &&
+      totalComments <= FOR_YOU_WEIGHTS.debateInactiveCommentsMax &&
+      replyCount === 0 &&
+      exchangeCount === 0
+    ) {
+      return "inactive";
+    }
+
+    if (
+      totalVotes >= FOR_YOU_WEIGHTS.debateUnsettledMinVotes &&
+      totalComments >= FOR_YOU_WEIGHTS.debateUnsettledMinComments &&
+      ongoingDiscussion &&
+      closeness >= FOR_YOU_WEIGHTS.debateUnsettledClosenessThreshold
+    ) {
+      return "unsettled";
+    }
+
+    if (
+      totalVotes >= FOR_YOU_WEIGHTS.debateUnsettledMinVotes &&
+      totalComments >= 2 &&
+      closeness <= FOR_YOU_WEIGHTS.debateSettledClosenessThreshold
+    ) {
+      return "settled";
+    }
+
+    return ongoingDiscussion ? "active" : "inactive";
+  }
+
+  function getDebateBoosts(take, discussionMetrics) {
+    const vote = take && take.vote ? take.vote : {};
+    const totalVotes = normalizeCount(vote.total_votes);
+    const agreeVotes = normalizeCount(vote.agree_count);
+    const disagreeVotes = normalizeCount(vote.disagree_count);
+    const totalComments = Math.max(
+      normalizeCount(take && take.comment_count),
+      normalizeCount(discussionMetrics && discussionMetrics.totalComments)
+    );
+    const replyCount = normalizeCount(discussionMetrics && discussionMetrics.replyCount);
+    const exchangeCount = normalizeCount(discussionMetrics && discussionMetrics.exchangeCount);
+    const recentComments = normalizeCount(discussionMetrics && discussionMetrics.recentComments);
+    const closeness = getVoteCloseness(totalVotes, agreeVotes, disagreeVotes);
+    const ageHours = getTakeAgeHours(take);
+    const debateState = determineDebateState(take, discussionMetrics);
+
+    let unsettledBoost = 0;
+    if (debateState === "unsettled") {
+      unsettledBoost =
+        FOR_YOU_WEIGHTS.debateUnsettledBoost * closeness +
+        Math.min(replyCount + exchangeCount + recentComments, 9) * FOR_YOU_WEIGHTS.debateOngoingWeight;
+    }
+
+    let earlyDebateBoost = 0;
+    const isEarlyDebate =
+      totalComments >= FOR_YOU_WEIGHTS.earlyDebateMinComments &&
+      totalComments <= FOR_YOU_WEIGHTS.earlyDebateMaxComments &&
+      totalVotes <= FOR_YOU_WEIGHTS.earlyDebateMaxVotes &&
+      ageHours <= FOR_YOU_WEIGHTS.earlyDebateMaxAgeHours;
+    if (isEarlyDebate) {
+      earlyDebateBoost =
+        FOR_YOU_WEIGHTS.earlyDebateBoost *
+        (0.55 + closeness * 0.45) *
+        (1 + Math.min(replyCount + exchangeCount, 5) * 0.08);
+    }
+
+    return {
+      debateState,
+      unsettledBoost,
+      earlyDebateBoost,
     };
   }
 
@@ -567,6 +672,12 @@
     if (kind === "discussion") {
       return "Active debate right now";
     }
+    if (kind === "unsettled") {
+      return "Debate is still unresolved";
+    }
+    if (kind === "early-debate") {
+      return "Discussion is just taking off";
+    }
     if (!value) return "";
     if (kind === "author") {
       const username = take && take.profile && take.profile.username ? `@${take.profile.username}` : "this creator";
@@ -595,6 +706,7 @@
       rankingContext && rankingContext.followedVoteCountByTakeId
         ? Number(rankingContext.followedVoteCountByTakeId.get(String(take.id || "")) || 0)
         : 0;
+    const debateBoosts = getDebateBoosts(take, discussionMetrics);
 
     if (rankingContext && rankingContext.followedAuthorIds && rankingContext.followedAuthorIds.has(take.user_id)) {
       return {
@@ -607,6 +719,20 @@
       return {
         kind: "social",
         label: formatReasonLabel("social", "", take),
+      };
+    }
+
+    if (debateBoosts.debateState === "unsettled" && debateBoosts.unsettledBoost > 0) {
+      return {
+        kind: "unsettled",
+        label: formatReasonLabel("unsettled", "", take),
+      };
+    }
+
+    if (debateBoosts.earlyDebateBoost > 0) {
+      return {
+        kind: "early-debate",
+        label: formatReasonLabel("early-debate", "", take),
       };
     }
 
@@ -762,6 +888,7 @@
         : createEmptyDiscussionMetrics();
     const totalComments = Math.max(normalizeCount(take.comment_count), normalizeCount(discussionMetrics.totalComments));
     const controversyScore = totalVotes > 1 ? 1 - Math.abs(agreeVotes - disagreeVotes) / totalVotes : 0;
+    const debateBoosts = getDebateBoosts(take, discussionMetrics);
     const engagementScore =
       Math.min(totalVotes, 45) * FOR_YOU_WEIGHTS.voteWeight +
       Math.min(totalComments, 22) * FOR_YOU_WEIGHTS.commentWeight +
@@ -771,7 +898,12 @@
       Math.min(discussionMetrics.recentComments, 10) * FOR_YOU_WEIGHTS.recentCommentWeight +
       controversyScore * FOR_YOU_WEIGHTS.controversyWeight;
     const recencyScore = Math.max(0, FOR_YOU_WEIGHTS.recencyWindowHours - ageHours) * FOR_YOU_WEIGHTS.recencyDecayPerHour;
-    let score = recencyScore + engagementScore + Math.min(engagementScore, 20) * Math.max(0, 1 - ageHours / 72) * FOR_YOU_WEIGHTS.engagementShelfLifeWeight;
+    let score =
+      recencyScore +
+      engagementScore +
+      Math.min(engagementScore, 20) * Math.max(0, 1 - ageHours / 72) * FOR_YOU_WEIGHTS.engagementShelfLifeWeight +
+      debateBoosts.unsettledBoost +
+      debateBoosts.earlyDebateBoost;
 
     if (getTakeMediaKind(take) === "image") {
       score += FOR_YOU_WEIGHTS.mediaWeight;
@@ -845,6 +977,12 @@
         ...take,
         for_you_score: scoreTake(take, state, rankingContext, signalSummary),
         for_you_reason: buildTakeReason(take, state, rankingContext),
+        for_you_debate_state: getDebateBoosts(
+          take,
+          rankingContext && rankingContext.discussionByTakeId
+            ? rankingContext.discussionByTakeId.get(String(take && take.id || "")) || createEmptyDiscussionMetrics()
+            : createEmptyDiscussionMetrics()
+        ).debateState,
       }))
       .sort((left, right) => {
         const scoreDiff = Number(right.for_you_score || 0) - Number(left.for_you_score || 0);
