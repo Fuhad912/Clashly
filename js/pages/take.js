@@ -1003,12 +1003,9 @@
       bindAiJudgeReasonModal();
       updateCommentsSummary();
 
-      // Parallelise session resolve with take fetch — they don't depend on each other
-      const [sessionState, takeResult] = await Promise.all([
-        window.ClashlySession.resolveSession(),
-        window.ClashlyTakes.fetchTakeById(takeId, { currentUserId: "" }),
-      ]);
+      const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      const takeResult = await window.ClashlyTakes.fetchTakeById(takeId, { currentUserId });
 
       if (takeResult.error) {
         throw takeResult.error;
@@ -1019,8 +1016,6 @@
         return;
       }
 
-      // If the user is logged in, patch their vote/bookmark state onto the fetched take
-      // without a second DB round-trip when possible
       currentTake = takeResult.take;
       currentCommentsCount = Number((currentTake && currentTake.comment_count) || 0);
 
