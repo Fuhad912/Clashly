@@ -1096,15 +1096,13 @@
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       renderRecentSearches();
 
-      // Parallelise session resolve with all data fetches — session is only needed for
-      // personalised vote/bookmark state, discovery content can load immediately
       const [sessionState] = await Promise.all([
         window.ClashlySession.resolveSession(),
         loadTrendingTopics(),
-        loadResults(),
         loadExploreLanes(),
       ]);
       currentUserId = sessionState.user ? sessionState.user.id : "";
+      await loadResults();
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
