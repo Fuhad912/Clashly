@@ -585,6 +585,26 @@
     return createVoteSummary(agree, disagree, userVote);
   }
 
+  function resolveSubmittedVoteSummary(optimisticVote, serverVote) {
+    if (optimisticVote) {
+      return createVoteSummary(
+        optimisticVote.agree_count,
+        optimisticVote.disagree_count,
+        optimisticVote.user_vote
+      );
+    }
+
+    if (serverVote) {
+      return createVoteSummary(
+        serverVote.agree_count,
+        serverVote.disagree_count,
+        serverVote.user_vote
+      );
+    }
+
+    return defaultVoteSummary();
+  }
+
   function buildVoteSummaryMap(takeIds, voteRows, currentUserId) {
     const map = new Map();
     takeIds.forEach((takeId) => {
@@ -1752,6 +1772,7 @@
     fetchTakeById,
     submitVote,
     previewVoteSummary,
+    resolveSubmittedVoteSummary,
     toggleBookmark,
     deleteTake,
   };
