@@ -403,7 +403,6 @@
   }
 
   async function ensureTakeLoaded(takeId) {
-    if (currentTake && currentTake.id === takeId) return;
     const result = await window.ClashlyTakes.fetchTakeById(takeId, {
       currentUserId,
     });
