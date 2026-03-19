@@ -10,10 +10,10 @@
   const page = document.body ? document.body.dataset.page || "" : "";
   const requiresAuth = document.body ? document.body.dataset.requiresAuth === "true" : false;
   const dataReadyPages = new Set(["auth", "home", "profile", "take", "search", "hashtag", "category", "explore", "notifications"]);
-  const MIN_DURATION_MS = 420;
-  const DOM_READY_FALLBACK_MS = 700;
+  const MIN_DURATION_MS = 150;
+  const DOM_READY_FALLBACK_MS = 400;
   const MAX_DURATION_MS = 6000;
-  const EXIT_DURATION_MS = 240;
+  const EXIT_DURATION_MS = 150;
   const start = Date.now();
   const pendingTokens = new Set();
   let hidden = false;
