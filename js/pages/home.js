@@ -469,11 +469,17 @@
         window.ClashePersonalization.recordTakeEngagement(currentUserId, target, "vote").catch(() => {});
       }
 
-      // Reconcile with server result — surgical DOM update only
+      // Reconcile counts from server but trust the optimistic user_vote —
+      // the server re-read can outrace its own write on Supabase and return
+      // a stale user_vote, causing the button to flash unselected.
+      const reconciledVote = voteResult.vote ? {
+        ...voteResult.vote,
+        user_vote: optimisticVote ? optimisticVote.user_vote : voteResult.vote.user_vote,
+      } : optimisticVote;
       updateTakeInAllSections(input.takeId, (take) => ({
         ...take,
         vote_loading: false,
-        vote: voteResult.vote,
+        vote: reconciledVote || take.vote,
       }));
       syncActiveTakeState(input.takeId);
     } catch (error) {
