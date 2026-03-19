@@ -199,6 +199,7 @@
 
   async function loadFeed(options) {
     const append = Boolean(options && options.append);
+    const skipSkeleton = Boolean(options && options.skipSkeleton);
     const feedEl = document.getElementById("hashtag-feed-stream");
     if (!feedEl || !currentTag) return;
     if (isLoading) return;
@@ -211,10 +212,12 @@
       nextCursor = null;
       hasMore = true;
       // Show skeleton immediately for initial load — no blank screen
-      if (typeof window.clasheShowFeedSkeleton === "function") {
-        window.clasheShowFeedSkeleton("hashtag-feed-stream", 5);
-      } else {
-        feedEl.innerHTML = "";
+      if (!skipSkeleton) {
+        if (typeof window.clasheShowFeedSkeleton === "function") {
+          window.clasheShowFeedSkeleton("hashtag-feed-stream", 5);
+        } else {
+          feedEl.innerHTML = "";
+        }
       }
     }
 
@@ -249,14 +252,14 @@
       vote: detail.vote,
       vote_loading: false,
     });
-    renderFeed();
+    syncHashtagTakeState(detail.takeId);
   }
 
   function handleTakeBookmarkUpdated(event) {
     const detail = event.detail || {};
     if (!detail.takeId || typeof detail.bookmarked !== "boolean") return;
     updateTakeBookmarkState(detail.takeId, detail.bookmarked);
-    renderFeed();
+    syncHashtagTakeState(detail.takeId);
   }
 
   function shouldLoadMore() {
@@ -289,17 +292,24 @@
       currentTag = getQueryTag();
       renderHeader();
 
-      const sessionState = await window.ClashlySession.resolveSession();
-      currentUserId = sessionState.user ? sessionState.user.id : "";
-
-      if (currentUserId && currentTag && window.ClashePersonalization) {
-        window.ClashePersonalization.recordHashtagVisit(currentUserId, currentTag).catch(() => {});
+      // Show skeleton immediately — before session round-trip
+      if (typeof window.clasheShowFeedSkeleton === "function") {
+        window.clasheShowFeedSkeleton("hashtag-feed-stream", 5);
       }
 
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       bindInfiniteScroll();
-      await loadFeed({ append: false });
+
+      const [sessionState] = await Promise.all([
+        window.ClashlySession.resolveSession(),
+        loadFeed({ append: false, skipSkeleton: true }),
+      ]);
+      currentUserId = sessionState.user ? sessionState.user.id : "";
+
+      if (currentUserId && currentTag && window.ClashePersonalization) {
+        window.ClashePersonalization.recordHashtagVisit(currentUserId, currentTag).catch(() => {});
+      }
     } finally {
       if (window.ClasheLoader) {
         window.ClasheLoader.release("page-data");
