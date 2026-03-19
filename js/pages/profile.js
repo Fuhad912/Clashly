@@ -24,6 +24,9 @@
   let profileScrollQueued = false;
   const PROFILE_PAGE_SIZE = 15;
   const PROFILE_SCROLL_THRESHOLD_PX = 900;
+  const wholeNumberFormatter = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0,
+  });
 
   function setMetaStatus(message, type) {
     const metaNote = document.getElementById("profile-meta-note");
@@ -69,6 +72,12 @@
     avatarEl.textContent = window.ClashlyProfiles.initialsFromUsername(profile.username);
   }
 
+  function formatWholeNumber(value) {
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric)) return "0";
+    return wholeNumberFormatter.format(Math.max(0, Math.floor(numeric)));
+  }
+
   function renderProfile(profile, email) {
     const usernameEl = document.getElementById("profile-username");
     const bioEl = document.getElementById("profile-bio");
@@ -76,6 +85,7 @@
     const takesCountEl = document.getElementById("takes-count");
     const followersCountEl = document.getElementById("followers-count");
     const followingCountEl = document.getElementById("following-count");
+    const clashscoreCountEl = document.getElementById("clashscore-count");
     const username = profile && profile.username ? `@${profile.username}` : "@username";
 
     if (usernameEl) usernameEl.textContent = username;
@@ -95,6 +105,7 @@
     if (takesCountEl) takesCountEl.textContent = String(currentTakes.length);
     if (followersCountEl) followersCountEl.textContent = String(followStats.followersCount);
     if (followingCountEl) followingCountEl.textContent = String(followStats.followingCount);
+    if (clashscoreCountEl) clashscoreCountEl.textContent = formatWholeNumber(profile && profile.clashscore);
   }
 
   function renderActionButtons() {
