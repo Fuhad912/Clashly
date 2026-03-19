@@ -446,10 +446,11 @@
       ? window.ClashlyTakes.previewVoteSummary(previousVote, input.voteType)
       : previousVote;
 
-    // Apply optimistic update instantly — no full re-render
+    // Apply optimistic update instantly — vote_loading:true guards against
+    // double-submission without visually disabling buttons (renderer ignores it)
     updateTakeInAllSections(input.takeId, (take) => ({
       ...take,
-      vote_loading: false,
+      vote_loading: true,
       vote: optimisticVote || take.vote,
     }));
     syncActiveTakeState(input.takeId);
