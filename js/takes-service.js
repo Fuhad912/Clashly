@@ -1708,10 +1708,13 @@
       };
     }
 
-    const insertResult = await client.from(BOOKMARKS_TABLE).insert({
-      user_id: input.userId,
-      take_id: input.takeId,
-    });
+    const insertResult = await client.from(BOOKMARKS_TABLE).upsert(
+      {
+        user_id: input.userId,
+        take_id: input.takeId,
+      },
+      { onConflict: "user_id,take_id" }
+    );
 
     return {
       bookmarked: !insertResult.error,
