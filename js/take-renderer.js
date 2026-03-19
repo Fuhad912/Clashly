@@ -8,7 +8,7 @@
       agreePct: Number(vote.agree_pct || 0),
       disagreePct: Number(vote.disagree_pct || 0),
       userVote: String(vote.user_vote || ""),
-      isLoading: Boolean(take && take.vote_loading),
+      isLoading: false,
     };
   }
 
