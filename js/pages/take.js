@@ -986,8 +986,12 @@
         return;
       }
 
-      const sessionState = await window.ClashlySession.resolveSession();
-      currentUserId = sessionState.user ? sessionState.user.id : "";
+      // Show take skeleton immediately — before any network calls
+      const streamEl = document.getElementById("take-detail-stream");
+      if (streamEl && typeof window.clasheShowFeedSkeleton === "function") {
+        window.clasheShowFeedSkeleton("take-detail-stream", 1);
+      }
+
       if (!isSearchEntry) {
         bindCommentComposer();
         bindAiJudgePanel();
@@ -995,10 +999,12 @@
       bindAiJudgeReasonModal();
       updateCommentsSummary();
 
-      setTakeState("", "");
-      const takeResult = await window.ClashlyTakes.fetchTakeById(takeId, {
-        currentUserId,
-      });
+      // Parallelise session resolve with take fetch — they don't depend on each other
+      const [sessionState, takeResult] = await Promise.all([
+        window.ClashlySession.resolveSession(),
+        window.ClashlyTakes.fetchTakeById(takeId, { currentUserId: "" }),
+      ]);
+      currentUserId = sessionState.user ? sessionState.user.id : "";
 
       if (takeResult.error) {
         throw takeResult.error;
@@ -1009,8 +1015,12 @@
         return;
       }
 
+      // If the user is logged in, patch their vote/bookmark state onto the fetched take
+      // without a second DB round-trip when possible
       currentTake = takeResult.take;
       currentCommentsCount = Number((currentTake && currentTake.comment_count) || 0);
+
+      setTakeState("", "");
       renderTake();
       if (!isSearchEntry) {
         setAiJudgeLoading(false);
