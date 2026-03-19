@@ -3,6 +3,8 @@
   const AVATAR_BUCKET = "avatars";
   const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
   const ALLOWED_GENDERS = ["female", "male", "non_binary", "prefer_not_to_say", "other"];
+  const PROFILE_SELECT_BASE = "id, username, bio, date_of_birth, gender, avatar_url, created_at, clashscore";
+  const PROFILE_SELECT_WITH_ONBOARDING = `${PROFILE_SELECT_BASE}, onboarding_seen`;
 
   function getClientOrThrow() {
     if (!window.ClashlySupabase) {
@@ -30,27 +32,55 @@
     return safe.slice(0, 2).toUpperCase();
   }
 
-  async function getProfileById(userId) {
+  function isClashscoreColumnMissing(error) {
+    const code = String(error && error.code || "");
+    const message = String(error && error.message || "").toLowerCase();
+    return code === "42703" || (message.includes("clashscore") && message.includes("column"));
+  }
+
+  function normalizeProfileRow(profile) {
+    if (!profile) return profile;
+    return {
+      ...profile,
+      clashscore: Math.max(0, Number(profile.clashscore || 0)),
+    };
+  }
+
+  async function fetchProfileByColumn(column, value, options) {
     const client = getClientOrThrow();
-    const { data, error } = await client
+    const includeOnboarding = Boolean(options && options.includeOnboarding);
+    const preferredFields = includeOnboarding ? PROFILE_SELECT_WITH_ONBOARDING : PROFILE_SELECT_BASE;
+    const fallbackFields = includeOnboarding
+      ? "id, username, bio, date_of_birth, gender, avatar_url, created_at, onboarding_seen"
+      : "id, username, bio, date_of_birth, gender, avatar_url, created_at";
+
+    let result = await client
       .from(PROFILES_TABLE)
-      .select("id, username, bio, date_of_birth, gender, avatar_url, created_at, onboarding_seen")
-      .eq("id", userId)
+      .select(preferredFields)
+      .eq(column, value)
       .maybeSingle();
 
-    return { profile: data, error };
+    if (result.error && isClashscoreColumnMissing(result.error)) {
+      result = await client
+        .from(PROFILES_TABLE)
+        .select(fallbackFields)
+        .eq(column, value)
+        .maybeSingle();
+    }
+
+    return {
+      profile: normalizeProfileRow(result.data || null),
+      error: result.error,
+    };
+  }
+
+  async function getProfileById(userId) {
+    return fetchProfileByColumn("id", userId, { includeOnboarding: true });
   }
 
   async function getProfileByUsername(username) {
-    const client = getClientOrThrow();
     const normalized = normalizeUsername(username);
-    const { data, error } = await client
-      .from(PROFILES_TABLE)
-      .select("id, username, bio, date_of_birth, gender, avatar_url, created_at")
-      .eq("username", normalized)
-      .maybeSingle();
-
-    return { profile: data, error };
+    return fetchProfileByColumn("username", normalized, { includeOnboarding: false });
   }
 
   async function hasCompletedProfile(userId) {
@@ -129,13 +159,15 @@
       avatar_url: input.avatarUrl || null,
     };
 
-    const { data, error } = await client
+    const { error } = await client
       .from(PROFILES_TABLE)
-      .upsert(payload, { onConflict: "id" })
-      .select("id, username, bio, date_of_birth, gender, avatar_url, created_at")
-      .single();
+      .upsert(payload, { onConflict: "id" });
 
-    return { profile: data, error };
+    if (error) {
+      return { profile: null, error };
+    }
+
+    return getProfileById(input.userId);
   }
 
 
