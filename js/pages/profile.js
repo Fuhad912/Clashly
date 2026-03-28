@@ -65,7 +65,7 @@
     if (!avatarEl || !profile) return;
 
     if (profile.avatar_url) {
-      avatarEl.innerHTML = `<img src="${profile.avatar_url}" alt="@${profile.username} profile photo" />`;
+      avatarEl.innerHTML = `<img src="${profile.avatar_url}" alt="@${profile.username} profile photo" decoding="async" />`;
       return;
     }
 
@@ -578,7 +578,7 @@
         const avatar = user.avatar_url
           ? `<div class="follow-list-item__avatar"><img src="${window.ClashlyUtils.escapeHtml(user.avatar_url)}" alt="@${window.ClashlyUtils.escapeHtml(
               user.username
-            )} avatar" /></div>`
+            )} avatar" loading="lazy" decoding="async" /></div>`
           : `<div class="follow-list-item__avatar">${window.ClashlyProfiles.initialsFromUsername(user.username)}</div>`;
         const action = user.is_self
           ? ""
