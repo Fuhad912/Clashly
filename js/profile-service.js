@@ -5,6 +5,9 @@
   const ALLOWED_GENDERS = ["female", "male", "non_binary", "prefer_not_to_say", "other"];
   const PROFILE_SELECT_BASE = "id, username, bio, date_of_birth, gender, avatar_url, created_at, clashscore";
   const PROFILE_SELECT_WITH_ONBOARDING = `${PROFILE_SELECT_BASE}, onboarding_seen`;
+  const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
+  const profileCacheById = new Map();
+  const profileCacheByUsername = new Map();
 
   function getClientOrThrow() {
     if (!window.ClashlySupabase) {
@@ -46,7 +49,74 @@
     };
   }
 
+  function readProfileCache(map, key) {
+    if (!key) return null;
+    const entry = map.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+      map.delete(key);
+      return null;
+    }
+    return entry.profile;
+  }
+
+  function cacheProfile(profile) {
+    const safeProfile = normalizeProfileRow(profile);
+    if (!safeProfile || !safeProfile.id) return null;
+
+    const entry = {
+      profile: safeProfile,
+      expiresAt: Date.now() + PROFILE_CACHE_TTL_MS,
+    };
+
+    profileCacheById.set(safeProfile.id, entry);
+
+    Array.from(profileCacheByUsername.entries()).forEach(([cacheKey, cacheEntry]) => {
+      if (cacheEntry && cacheEntry.profile && cacheEntry.profile.id === safeProfile.id && cacheKey !== safeProfile.username) {
+        profileCacheByUsername.delete(cacheKey);
+      }
+    });
+
+    if (safeProfile.username) {
+      profileCacheByUsername.set(safeProfile.username, entry);
+    }
+
+    return safeProfile;
+  }
+
+  function cacheProfiles(profiles) {
+    return (profiles || []).map((profile) => cacheProfile(profile)).filter(Boolean);
+  }
+
+  function getCachedProfileById(userId) {
+    return readProfileCache(profileCacheById, userId);
+  }
+
+  function getCachedProfileByUsername(username) {
+    return readProfileCache(profileCacheByUsername, normalizeUsername(username));
+  }
+
+  function getCachedProfilesByIds(userIds) {
+    return [...new Set((userIds || []).filter(Boolean))]
+      .map((userId) => getCachedProfileById(userId))
+      .filter(Boolean);
+  }
+
   async function fetchProfileByColumn(column, value, options) {
+    const cachedProfile =
+      column === "id"
+        ? getCachedProfileById(value)
+        : column === "username"
+          ? getCachedProfileByUsername(value)
+          : null;
+
+    if (cachedProfile) {
+      return {
+        profile: cachedProfile,
+        error: null,
+      };
+    }
+
     const client = getClientOrThrow();
     const includeOnboarding = Boolean(options && options.includeOnboarding);
     const preferredFields = includeOnboarding ? PROFILE_SELECT_WITH_ONBOARDING : PROFILE_SELECT_BASE;
@@ -68,8 +138,9 @@
         .maybeSingle();
     }
 
+    const profile = result.data ? cacheProfile(result.data) : null;
     return {
-      profile: normalizeProfileRow(result.data || null),
+      profile,
       error: result.error,
     };
   }
@@ -199,8 +270,10 @@
     normalizeUsername,
     isUsernameValid,
     initialsFromUsername,
+    cacheProfiles,
     getProfileById,
     getProfileByUsername,
+    getCachedProfilesByIds,
     hasCompletedProfile,
     isUsernameAvailable,
     uploadAvatar,
