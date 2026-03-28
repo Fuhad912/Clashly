@@ -26,7 +26,7 @@
         <div class="take-item__avatar">
           <img src="${window.ClashlyUtils.escapeHtml(profile.avatar_url)}" alt="${window.ClashlyUtils.escapeHtml(
             getUsername(profile)
-          )} avatar" />
+          )} avatar" loading="lazy" decoding="async" />
         </div>
       `;
     }
@@ -382,7 +382,7 @@
           <div class="take-item__media">
             <img src="${window.ClashlyUtils.escapeHtml(imageUrls[0])}" alt="Take image from ${window.ClashlyUtils.escapeHtml(
               username
-            )}" loading="lazy" />
+            )}" loading="lazy" decoding="async" />
           </div>
         `
         : `
@@ -395,6 +395,7 @@
                       src="${window.ClashlyUtils.escapeHtml(imageUrl)}"
                       alt="Take image ${index + 1} from ${window.ClashlyUtils.escapeHtml(username)}"
                       loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 `
@@ -447,7 +448,7 @@
         <div class="profile-grid-take__media-wrap">
           <img class="profile-grid-take__media" src="${window.ClashlyUtils.escapeHtml(
             take.image_url
-          )}" alt="Take image from ${window.ClashlyUtils.escapeHtml(username)}" loading="lazy" />
+          )}" alt="Take image from ${window.ClashlyUtils.escapeHtml(username)}" loading="lazy" decoding="async" />
           <div class="profile-grid-take__overlay">
             <p class="profile-grid-take__excerpt">${excerpt}</p>
           </div>
