@@ -430,16 +430,42 @@
   }
 
   async function fetchProfilesByIds(userIds) {
-    if (!userIds.length) return { profiles: [], error: null };
+    const safeUserIds = [...new Set((userIds || []).filter(Boolean))];
+    if (!safeUserIds.length) return { profiles: [], error: null };
+
+    const cachedProfiles =
+      window.ClashlyProfiles && typeof window.ClashlyProfiles.getCachedProfilesByIds === "function"
+        ? window.ClashlyProfiles.getCachedProfilesByIds(safeUserIds)
+        : [];
+    const profileMap = new Map(cachedProfiles.map((profile) => [profile.id, profile]));
+    const missingUserIds = safeUserIds.filter((userId) => !profileMap.has(userId));
+
+    if (!missingUserIds.length) {
+      return {
+        profiles: safeUserIds.map((userId) => profileMap.get(userId)).filter(Boolean),
+        error: null,
+      };
+    }
 
     const client = getClientOrThrow();
     const queryResult = await client
       .from("profiles")
       .select("id, username, avatar_url")
-      .in("id", userIds);
+      .in("id", missingUserIds);
+
+    const fetchedProfiles =
+      window.ClashlyProfiles && typeof window.ClashlyProfiles.cacheProfiles === "function"
+        ? window.ClashlyProfiles.cacheProfiles(queryResult.data || [])
+        : queryResult.data || [];
+
+    fetchedProfiles.forEach((profile) => {
+      if (profile && profile.id) {
+        profileMap.set(profile.id, profile);
+      }
+    });
 
     return {
-      profiles: queryResult.data || [],
+      profiles: safeUserIds.map((userId) => profileMap.get(userId)).filter(Boolean),
       error: queryResult.error,
     };
   }
