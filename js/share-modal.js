@@ -3,7 +3,7 @@
 
   function buildAvatar(profile) {
     if (profile && profile.avatar_url) {
-      return `<div class="share-preview__avatar"><img src="${window.ClashlyUtils.escapeHtml(profile.avatar_url)}" alt="" /></div>`;
+      return `<div class="share-preview__avatar"><img src="${window.ClashlyUtils.escapeHtml(profile.avatar_url)}" alt="" decoding="async" /></div>`;
     }
 
     const username = profile && profile.username ? profile.username : "cl";
@@ -157,7 +157,7 @@
     const username = getUsername(take.profile);
     const time = window.ClashlyUtils.formatRelativeTime(take.created_at);
     const media = take.image_url
-      ? `<div class="share-preview__media"><img src="${window.ClashlyUtils.escapeHtml(take.image_url)}" alt="" /></div>`
+      ? `<div class="share-preview__media"><img src="${window.ClashlyUtils.escapeHtml(take.image_url)}" alt="" decoding="async" /></div>`
       : "";
 
     preview.innerHTML = `
