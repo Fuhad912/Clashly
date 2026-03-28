@@ -25,7 +25,7 @@
         <div class="comment-item__avatar">
           <img src="${window.ClashlyUtils.escapeHtml(profile.avatar_url)}" alt="${window.ClashlyUtils.escapeHtml(
             getUsername(profile)
-          )} avatar" />
+          )} avatar" loading="lazy" decoding="async" />
         </div>
       `;
     }
