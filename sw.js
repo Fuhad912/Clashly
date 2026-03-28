@@ -1,6 +1,7 @@
-const VERSION = "clashe-pwa-v6";
+const VERSION = "clashe-pwa-v7";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
+const IMAGE_CACHE = `${VERSION}-images`;
 
 const APP_SHELL_ASSETS = [
   "./",
@@ -78,7 +79,7 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
-    if (response && response.ok) {
+    if (isCacheableResponse(response)) {
       cache.put(request, response.clone());
     }
     return response;
@@ -98,7 +99,7 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request);
   const fetchPromise = fetch(request)
     .then((response) => {
-      if (response && response.ok) {
+      if (isCacheableResponse(response)) {
         cache.put(request, response.clone());
       }
       return response;
@@ -108,20 +109,51 @@ async function staleWhileRevalidate(request, cacheName) {
   return cached || fetchPromise;
 }
 
+function isCacheableResponse(response) {
+  return Boolean(response) && (response.ok || response.type === "opaque");
+}
+
+function isRemoteStaticAsset(request, url) {
+  if (!request || !url) return false;
+  const destination = request.destination || "";
+  const host = url.hostname || "";
+  return (
+    ["script", "style", "font"].includes(destination) &&
+    (host === "cdn.jsdelivr.net" || host === "fonts.googleapis.com" || host === "fonts.gstatic.com")
+  );
+}
+
+function isSupabaseStorageImageRequest(request, url) {
+  if (!request || !url) return false;
+  if ((request.destination || "") !== "image") return false;
+  return url.hostname.endsWith(".supabase.co") && url.pathname.includes("/storage/v1/object/public/");
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
+  const isSameOrigin = url.origin === self.location.origin;
 
-  if (request.method !== "GET" || url.origin !== self.location.origin) {
+  if (request.method !== "GET") {
     return;
   }
 
-  if (request.mode === "navigate") {
+  if (request.mode === "navigate" && isSameOrigin) {
     event.respondWith(networkFirst(request, PAGE_CACHE, "./index.html"));
     return;
   }
 
-  if (/\.(?:css|js|png|jpg|jpeg|svg|webp|webmanifest)$/i.test(url.pathname)) {
+  if (isSameOrigin && /\.(?:css|js|png|jpg|jpeg|svg|webp|webmanifest)$/i.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+    return;
+  }
+
+  if (isSupabaseStorageImageRequest(request, url)) {
+    event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE));
+    return;
+  }
+
+  if (isRemoteStaticAsset(request, url)) {
     event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
   }
 });
