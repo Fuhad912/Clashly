@@ -268,7 +268,7 @@
               <div class="comments-drawer__media-frame">
                 <img src="${window.ClashlyUtils.escapeHtml(imageUrls[0])}" alt="${window.ClashlyUtils.escapeHtml(
                   username
-                )} take image" />
+                )} take image" decoding="async" />
               </div>
             `
             : `
@@ -280,6 +280,7 @@
                         <img
                           src="${window.ClashlyUtils.escapeHtml(imageUrl)}"
                           alt="${window.ClashlyUtils.escapeHtml(username)} take image ${index + 1}"
+                          decoding="async"
                         />
                       </div>
                     `
