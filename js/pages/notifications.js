@@ -18,7 +18,7 @@
     if (actor && actor.avatar_url) {
       return `<span class="notification-item__avatar"><img src="${window.ClashlyUtils.escapeHtml(actor.avatar_url)}" alt="@${window.ClashlyUtils.escapeHtml(
         actor.username || "user"
-      )} avatar" /></span>`;
+      )} avatar" loading="lazy" decoding="async" /></span>`;
     }
 
     const fallback = actor && actor.username ? window.ClashlyProfiles.initialsFromUsername(actor.username) : "CL";
