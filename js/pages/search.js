@@ -411,7 +411,7 @@
     if (user.avatar_url) {
       return `<div class="search-result__avatar"><img src="${window.ClashlyUtils.escapeHtml(user.avatar_url)}" alt="@${window.ClashlyUtils.escapeHtml(
         user.username
-      )} avatar" /></div>`;
+      )} avatar" loading="lazy" decoding="async" /></div>`;
     }
 
     return `<div class="search-result__avatar">${window.ClashlyProfiles.initialsFromUsername(user.username)}</div>`;
