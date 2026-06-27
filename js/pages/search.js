@@ -144,6 +144,31 @@
     countEl.textContent = safeCount ? safeCount.toLocaleString() : "";
   }
 
+  function findExactHashtagMatch() {
+    const safeQuery = window.ClashlySearch.normalizeHashtagQuery(currentQuery);
+    if (!safeQuery) return null;
+    return (
+      currentHashtagResults.find((hashtag) => String(hashtag && hashtag.tag || "").toLowerCase() === safeQuery) || null
+    );
+  }
+
+  function renderExactTagCta() {
+    const ctaEl = document.getElementById("search-social-cta");
+    if (!ctaEl) return;
+
+    const exactMatch = findExactHashtagMatch();
+    if (!exactMatch) {
+      ctaEl.hidden = true;
+      ctaEl.removeAttribute("href");
+      ctaEl.textContent = "";
+      return;
+    }
+
+    ctaEl.hidden = false;
+    ctaEl.href = `hashtag.html?tag=${encodeURIComponent(exactMatch.tag)}`;
+    ctaEl.innerHTML = `Jump straight to the <strong>#${window.ClashlyUtils.escapeHtml(exactMatch.tag)}</strong> feed &rarr;`;
+  }
+
   function renderResultsSummary() {
     const summaryEl = document.getElementById("search-social-summary");
     const queryEl = document.getElementById("search-social-query");
@@ -157,6 +182,7 @@
       queryEl.textContent = "";
       lineEl.textContent = "";
       statsEl.innerHTML = "";
+      renderExactTagCta();
       return;
     }
 
@@ -189,14 +215,26 @@
             : hashtagsCount
               ? `${hashtagsCount} ${hashtagsCount === 1 ? "tag is" : "tags are"} clustering around the same conversation.`
               : `No matching profiles, takes, or tags for "${currentQuery}" yet.`;
+
+    const statTargets = ["", "search-users-group", "search-takes-group", "search-hashtags-group"];
+    const statCounts = [totalCount, usersCount, takesCount, hashtagsCount];
     statsEl.innerHTML = [
       `${totalCount} ${totalCount === 1 ? "result" : "results"}`,
       `${usersCount} ${usersCount === 1 ? "person" : "people"}`,
       `${takesCount} ${takesCount === 1 ? "take" : "takes"}`,
       `${hashtagsCount} ${hashtagsCount === 1 ? "tag" : "tags"}`,
     ]
-      .map((label, index) => `<span class="search-social-summary__stat search-social-summary__stat--${index + 1}">${window.ClashlyUtils.escapeHtml(label)}</span>`)
+      .map((label, index) => {
+        const target = statTargets[index];
+        const safeLabel = window.ClashlyUtils.escapeHtml(label);
+        if (target && statCounts[index] > 0) {
+          return `<a class="search-social-summary__stat search-social-summary__stat--${index + 1}" href="#${target}">${safeLabel}</a>`;
+        }
+        return `<span class="search-social-summary__stat search-social-summary__stat--${index + 1}">${safeLabel}</span>`;
+      })
       .join("");
+
+    renderExactTagCta();
   }
 
   async function decorateUsersWithFollowState(users) {
@@ -1307,6 +1345,7 @@
           formId: "search-page-form",
           inputId: "search-page-input",
           getCurrentUserId: () => currentUserId,
+          getRecentSearches: () => getRecentSearches(),
         });
       }
 
