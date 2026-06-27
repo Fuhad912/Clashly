@@ -5,6 +5,26 @@
     return `${value.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
   }
 
+  function stripHash(value) {
+    return String(value || "").trim().replace(/^#/, "");
+  }
+
+  function highlightMatch(text, query) {
+    const safeText = String(text || "");
+    const safeQuery = String(query || "").trim();
+    if (!safeQuery) return window.ClashlyUtils.escapeHtml(safeText);
+
+    const index = safeText.toLowerCase().indexOf(safeQuery.toLowerCase());
+    if (index === -1) return window.ClashlyUtils.escapeHtml(safeText);
+
+    const before = safeText.slice(0, index);
+    const match = safeText.slice(index, index + safeQuery.length);
+    const after = safeText.slice(index + safeQuery.length);
+    return `${window.ClashlyUtils.escapeHtml(before)}<mark class="search-suggestions__match">${window.ClashlyUtils.escapeHtml(
+      match
+    )}</mark>${window.ClashlyUtils.escapeHtml(after)}`;
+  }
+
   function getItems(instance) {
     return Array.from(instance.dropdown.querySelectorAll(".search-suggestions__item"));
   }
@@ -58,7 +78,27 @@
     return `<div class="search-suggestions__avatar">${window.ClashlyProfiles.initialsFromUsername(user.username)}</div>`;
   }
 
-  function renderUsers(users) {
+  function renderQueryAction(query) {
+    const safeQuery = String(query || "").trim();
+    if (!safeQuery) return "";
+
+    return `
+      <a class="search-suggestions__item search-suggestions__item--query" href="search.html?q=${encodeURIComponent(safeQuery)}">
+        <span class="search-suggestions__query-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="m20 20-4.2-4.2"></path>
+          </svg>
+        </span>
+        <div class="search-suggestions__content">
+          <strong class="search-suggestions__title">Search for &ldquo;${window.ClashlyUtils.escapeHtml(safeQuery)}&rdquo;</strong>
+          <span class="search-suggestions__meta">See all people, takes, and tags</span>
+        </div>
+      </a>
+    `;
+  }
+
+  function renderUsers(users, query) {
     if (!users.length) return "";
 
     return `
@@ -75,7 +115,7 @@
               <a class="search-suggestions__item" href="${href}">
                 ${renderUserAvatar(user)}
                 <div class="search-suggestions__content">
-            <strong class="search-suggestions__title">@${window.ClashlyUtils.escapeHtml(user.username)}</strong>
+            <strong class="search-suggestions__title">@${highlightMatch(user.username, query)}</strong>
                   <span class="search-suggestions__meta">${window.ClashlyUtils.escapeHtml(
                     truncateText(user.bio || "No bio yet.", 64)
                   )}</span>
@@ -89,8 +129,10 @@
     `;
   }
 
-  function renderHashtags(hashtags) {
+  function renderHashtags(hashtags, query) {
     if (!hashtags.length) return "";
+
+    const safeQuery = stripHash(query);
 
     return `
       <section class="search-suggestions__group">
@@ -100,7 +142,7 @@
             (hashtag) => `
               <a class="search-suggestions__item search-suggestions__item--hashtag" href="hashtag.html?tag=${encodeURIComponent(hashtag.tag)}">
                 <div class="search-suggestions__content">
-                  <strong class="search-suggestions__title">#${window.ClashlyUtils.escapeHtml(hashtag.tag)}</strong>
+                  <strong class="search-suggestions__title">#${highlightMatch(hashtag.tag, safeQuery)}</strong>
                   <span class="search-suggestions__meta">Open hashtag feed</span>
                 </div>
               </a>
@@ -129,11 +171,38 @@
               <a class="search-suggestions__item search-suggestions__item--take" href="${href}">
                 <div class="search-suggestions__content">
                   <strong class="search-suggestions__title">${window.ClashlyUtils.escapeHtml(username)}</strong>
-                  <span class="search-suggestions__meta">${window.ClashlyUtils.escapeHtml(truncateText(take.content, 92))}</span>
+                  <span class="search-suggestions__meta">${highlightMatch(truncateText(take.content, 92), safeQuery)}</span>
                 </div>
               </a>
             `;
           })
+          .join("")}
+      </section>
+    `;
+  }
+
+  function renderRecents(recents) {
+    if (!recents.length) return "";
+
+    return `
+      <section class="search-suggestions__group">
+        <header class="search-suggestions__label">Recent searches</header>
+        ${recents
+          .map(
+            (term) => `
+              <a class="search-suggestions__item search-suggestions__item--recent" href="search.html?q=${encodeURIComponent(term)}">
+                <span class="search-suggestions__recent-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8v4l2.8 2"></path>
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                  </svg>
+                </span>
+                <div class="search-suggestions__content">
+                  <strong class="search-suggestions__title">${window.ClashlyUtils.escapeHtml(term)}</strong>
+                </div>
+              </a>
+            `
+          )
           .join("")}
       </section>
     `;
@@ -158,23 +227,54 @@
     instance.dropdown.hidden = false;
   }
 
+  function renderRecentOnly(instance) {
+    const recents =
+      typeof instance.getRecentSearches === "function" ? instance.getRecentSearches() || [] : [];
+
+    if (!recents.length) {
+      hide(instance);
+      return;
+    }
+
+    instance.latestQuery = "";
+    instance.dropdown.innerHTML = renderRecents(recents.slice(0, 6));
+    resetActiveItem(instance);
+    show(instance);
+  }
+
   function renderResults(instance, results) {
     const users = results.users || [];
     const hashtags = results.hashtags || [];
     const takes = results.takes || [];
     const hasResults = users.length || hashtags.length || takes.length;
+    const queryAction = renderQueryAction(instance.latestQuery);
 
     if (!hasResults) {
-      instance.dropdown.innerHTML = `<div class="search-suggestions__empty">No matching suggestions.</div>`;
+      instance.dropdown.innerHTML = `
+        ${queryAction}
+        <div class="search-suggestions__empty">No matching suggestions yet — try the full search.</div>
+      `;
       resetActiveItem(instance);
       show(instance);
       return;
     }
 
-      instance.dropdown.innerHTML = `
-      ${renderUsers(users)}
-      ${renderHashtags(hashtags)}
+    instance.dropdown.innerHTML = `
+      ${queryAction}
+      ${renderUsers(users, instance.latestQuery)}
+      ${renderHashtags(hashtags, instance.latestQuery)}
       ${renderTakes(takes, instance.latestQuery)}
+    `;
+    resetActiveItem(instance);
+    show(instance);
+  }
+
+  function renderLoading(instance) {
+    instance.dropdown.innerHTML = `
+      <div class="search-suggestions__loading">
+        <span class="search-suggestions__spinner" aria-hidden="true"></span>
+        <span>Searching&hellip;</span>
+      </div>
     `;
     resetActiveItem(instance);
     show(instance);
@@ -186,11 +286,15 @@
     const currentRequestId = instance.requestId;
 
     if (!query) {
-      hide(instance);
+      renderRecentOnly(instance);
       return;
     }
 
     instance.latestQuery = query;
+
+    if (instance.dropdown.hidden || !instance.dropdown.children.length) {
+      renderLoading(instance);
+    }
 
     try {
       const results = await window.ClashlySearch.fetchSuggestions(query, {
@@ -199,14 +303,14 @@
 
       if (currentRequestId !== instance.requestId) return;
       if (!results || results.error) {
-        hide(instance);
+        renderResults(instance, { users: [], hashtags: [], takes: [] });
         return;
       }
 
       renderResults(instance, results);
     } catch (error) {
       if (currentRequestId !== instance.requestId) return;
-      hide(instance);
+      renderResults(instance, { users: [], hashtags: [], takes: [] });
     }
   }
 
@@ -231,6 +335,7 @@
       latestQuery: "",
       activeIndex: -1,
       getCurrentUserId: config.getCurrentUserId,
+      getRecentSearches: config.getRecentSearches,
     };
 
     input.addEventListener("input", () => {
@@ -238,9 +343,7 @@
     });
 
     input.addEventListener("focus", () => {
-      if (String(input.value || "").trim()) {
-        scheduleLoad(instance);
-      }
+      scheduleLoad(instance);
     });
 
     input.addEventListener("keydown", (event) => {
