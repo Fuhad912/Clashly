@@ -63,6 +63,32 @@
           </form>
         </header>
 
+        <section id="search-discovery" class="search-discovery" hidden>
+          <header class="search-discovery__head">
+            <p class="search-hero__eyebrow">Search floor</p>
+            <h2 class="search-discovery__title">Pick up where you left off</h2>
+            <p class="search-discovery__subtitle">Your recent searches and what's trending across Clashe right now.</p>
+          </header>
+
+          <div class="search-panels">
+            <section id="search-recents-panel" class="search-panel" hidden>
+              <div class="search-panel__bar">
+                <h3 class="search-panel__title">Recent searches</h3>
+                <button type="button" id="search-recents-clear" class="search-panel__clear" hidden>Clear all</button>
+              </div>
+              <div id="search-recents-list" class="search-recents"></div>
+            </section>
+
+            <section class="search-panel">
+              <div class="search-panel__bar">
+                <h3 class="search-panel__title">Trending now</h3>
+              </div>
+              <p id="search-trending-state" class="search-discovery__state">Loading live lanes...</p>
+              <div id="search-trending-topics" class="search-topic-grid" aria-label="Trending hashtags" hidden></div>
+            </section>
+          </div>
+        </section>
+
         <section id="search-social-summary" class="search-social-summary" hidden>
           <div class="search-social-summary__main">
             <p class="search-social-summary__eyebrow">Search pulse</p>
@@ -71,6 +97,7 @@
               <span id="search-social-query" class="search-social-summary__query"></span>
             </div>
             <p id="search-social-line" class="search-social-summary__line"></p>
+            <a id="search-social-cta" class="search-social-summary__cta" href="#" hidden></a>
           </div>
           <div id="search-social-stats" class="search-social-summary__stats"></div>
         </section>
