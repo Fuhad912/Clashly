@@ -324,6 +324,149 @@
   color: var(--color-text);
 }
 
+/* ── Live validation states ───────────────────────────────── */
+
+.setup-field-status {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.setup-field-status.is-success {
+  color: var(--color-agree);
+}
+
+.setup-field-status.is-error {
+  color: var(--color-disagree);
+}
+
+.setup-field-status.is-pending {
+  color: var(--color-text-muted);
+}
+
+.setup-field.is-invalid input,
+.setup-field.is-invalid select,
+.setup-field.is-invalid textarea,
+.setup-field.is-invalid .setup-input-wrap input {
+  border-color: var(--color-disagree);
+}
+
+.setup-field.is-invalid input:focus,
+.setup-field.is-invalid select:focus,
+.setup-field.is-invalid textarea:focus {
+  box-shadow: 0 0 0 3px var(--color-disagree-bg);
+}
+
+.setup-field.is-valid input,
+.setup-field.is-valid .setup-input-wrap input {
+  border-color: var(--color-agree);
+}
+
+.setup-field.is-valid input:focus {
+  box-shadow: 0 0 0 3px var(--color-agree-bg);
+}
+
+.setup-input-indicator {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.setup-input-indicator[data-state=""] {
+  opacity: 0;
+}
+
+.setup-input-indicator[data-state="pending"] {
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-text-muted);
+  background: transparent;
+  animation: setup-indicator-spin 0.7s linear infinite;
+}
+
+.setup-input-indicator[data-state="success"] {
+  background: var(--color-agree);
+  border: 0;
+}
+
+.setup-input-indicator[data-state="success"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  width: 5px;
+  height: 8px;
+  border-right: 2px solid var(--color-brand-contrast);
+  border-bottom: 2px solid var(--color-brand-contrast);
+  transform: rotate(45deg);
+}
+
+.setup-input-indicator[data-state="error"] {
+  background: var(--color-disagree);
+  border: 0;
+}
+
+.setup-input-indicator[data-state="error"]::before,
+.setup-input-indicator[data-state="error"]::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 3px;
+  width: 10px;
+  height: 2px;
+  background: var(--color-brand-contrast);
+}
+
+.setup-input-indicator[data-state="error"]::before {
+  transform: rotate(45deg);
+}
+
+.setup-input-indicator[data-state="error"]::after {
+  transform: rotate(-45deg);
+}
+
+@keyframes setup-indicator-spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.setup-input-wrap input {
+  padding-right: 34px;
+}
+
+/* ── Avatar drag-and-drop + remove ─────────────────────────── */
+
+.setup-avatar-preview-wrap {
+  border-radius: 50%;
+  transition: box-shadow var(--transition-fast);
+}
+
+.setup-avatar-preview-wrap.is-dragover {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.setup-avatar-preview-wrap.is-dragover .setup-avatar-preview {
+  border-color: var(--color-text);
+}
+
+/* ── Bio counter warning states ───────────────────────────── */
+
+.setup-count.is-warning {
+  color: color-mix(in srgb, var(--color-text) 55%, #f59e0b 45%);
+}
+
+.setup-count.is-limit {
+  color: var(--color-disagree);
+  font-weight: 800;
+}
+
 @media (max-width: 640px) {
   .setup-page {
     background: var(--color-bg);
