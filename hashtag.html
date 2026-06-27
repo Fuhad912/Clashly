@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/create.css" />
     <link rel="stylesheet" href="css/feed.css" />
+    <link rel="stylesheet" href="css/hashtag.css" />
     <link rel="stylesheet" href="css/comments-modal.css" />
     <link rel="stylesheet" href="css/share-modal.css" />
     <link rel="stylesheet" href="css/responsive.css" />
@@ -37,11 +38,53 @@
 
     <main class="app-main app-main--home">
       <section class="feed-column">
-        <header class="feed-head">
-          <p class="section-kicker">Hashtag feed</p>
-          <h1 id="hashtag-title" class="page-title">#hashtag</h1>
-          <p id="hashtag-subtitle" class="section-subtitle">Takes tagged with this hashtag.</p>
+        <nav class="hashtag-navline" aria-label="Hashtag navigation">
+          <a id="hashtag-back-link" class="hashtag-back-link" href="search.html">
+            <span aria-hidden="true">&larr;</span>
+            <span>Search</span>
+          </a>
+        </nav>
+
+        <header class="feed-head hashtag-head">
+          <div class="feed-head__inner hashtag-head__inner">
+            <div class="hashtag-head__top">
+              <span class="hashtag-head__glyph" aria-hidden="true">#</span>
+              <div class="hashtag-head__copy">
+                <p class="section-kicker">Hashtag feed</p>
+                <h1 id="hashtag-title" class="page-title">#hashtag</h1>
+                <p id="hashtag-subtitle" class="section-subtitle">Takes tagged with this hashtag.</p>
+              </div>
+            </div>
+            <button type="button" id="hashtag-copy-link" class="hashtag-copy-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.6 13.4 8.5 15.5a3 3 0 1 1-4.2-4.2l2.1-2.1"></path>
+                <path d="M13.4 10.6 15.5 8.5a3 3 0 1 1 4.2 4.2l-2.1 2.1"></path>
+                <path d="m9 15 6-6"></path>
+              </svg>
+              <span data-copy-label>Copy link</span>
+            </button>
+          </div>
         </header>
+
+        <section id="hashtag-pulse" class="hashtag-pulse" hidden>
+          <div class="hashtag-pulse__copy">
+            <p class="hashtag-pulse__eyebrow">Live pulse</p>
+            <h2 id="hashtag-pulse-title">Tag activity</h2>
+            <p id="hashtag-pulse-line">Fresh takes and reactions tagged here.</p>
+          </div>
+          <div id="hashtag-pulse-stats" class="hashtag-pulse__stats" aria-label="Hashtag stats"></div>
+        </section>
+
+        <div id="hashtag-related" class="hashtag-related" hidden>
+          <p class="hashtag-related__label">Related tags</p>
+          <div id="hashtag-related-chips" class="hashtag-related__chips"></div>
+        </div>
+
+        <div class="hashtag-tabs" role="tablist" aria-label="Sort takes">
+          <button type="button" class="hashtag-tab is-active" data-hashtag-tab="new" role="tab" aria-selected="true">Newest</button>
+          <button type="button" class="hashtag-tab" data-hashtag-tab="trending" role="tab" aria-selected="false">Trending</button>
+          <button type="button" class="hashtag-tab" data-hashtag-tab="controversial" role="tab" aria-selected="false">Heated</button>
+        </div>
 
         <p id="hashtag-feed-state" class="feed-state">Loading takes...</p>
         <section id="hashtag-feed-stream" class="feed-stream" aria-label="Hashtag take feed"></section>
