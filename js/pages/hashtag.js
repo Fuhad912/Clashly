@@ -1,8 +1,10 @@
 (function () {
   const PAGE_SIZE = 15;
   const SCROLL_THRESHOLD_PX = 900;
+  const HEATED_THRESHOLD = 5;
   let currentUserId = "";
   let currentTag = "";
+  let currentSortTab = "new";
   let currentFeedTakes = [];
   let nextCursor = null;
   let hasMore = true;
@@ -30,6 +32,18 @@
     return window.ClashlyUtils.normalizeHashtag(rawTag);
   }
 
+  function formatCompactNumber(value) {
+    const number = Math.max(0, Number(value || 0));
+    return new Intl.NumberFormat(undefined, {
+      notation: number >= 1000 ? "compact" : "standard",
+      maximumFractionDigits: number >= 1000 ? 1 : 0,
+    }).format(number);
+  }
+
+  function pluralize(value, singular, plural) {
+    return Number(value) === 1 ? singular : plural || `${singular}s`;
+  }
+
   function renderHeader() {
     const titleEl = document.getElementById("hashtag-title");
     const subtitleEl = document.getElementById("hashtag-subtitle");
@@ -38,6 +52,175 @@
     document.title = `Clashe | #${safeTag}`;
     if (titleEl) titleEl.textContent = `#${safeTag}`;
     if (subtitleEl) subtitleEl.textContent = `Takes tagged with #${safeTag}`;
+  }
+
+  function getHashtagStats() {
+    const authorIds = new Set();
+    return currentFeedTakes.reduce(
+      (stats, take) => {
+        const vote = take && take.vote ? take.vote : {};
+        const totalVotes = Number(vote.total_votes || 0);
+        const commentCount = Number(take && take.comment_count ? take.comment_count : 0);
+
+        if (take && take.user_id) {
+          authorIds.add(take.user_id);
+        }
+
+        return {
+          takes: stats.takes + 1,
+          votes: stats.votes + totalVotes,
+          comments: stats.comments + commentCount,
+          authors: authorIds.size,
+          heated: stats.heated + (totalVotes + commentCount >= HEATED_THRESHOLD ? 1 : 0),
+        };
+      },
+      { takes: 0, votes: 0, comments: 0, authors: 0, heated: 0 }
+    );
+  }
+
+  function renderHashtagPulse() {
+    const pulseEl = document.getElementById("hashtag-pulse");
+    const titleEl = document.getElementById("hashtag-pulse-title");
+    const lineEl = document.getElementById("hashtag-pulse-line");
+    const statsEl = document.getElementById("hashtag-pulse-stats");
+    if (!pulseEl || !titleEl || !lineEl || !statsEl) return;
+
+    if (!currentTag || !currentFeedTakes.length) {
+      pulseEl.hidden = true;
+      statsEl.innerHTML = "";
+      return;
+    }
+
+    const stats = getHashtagStats();
+    const takeLabel = pluralize(stats.takes, "take");
+    const authorLabel = pluralize(stats.authors, "voice");
+
+    titleEl.textContent = `${formatCompactNumber(stats.takes)} ${takeLabel} tagged #${currentTag}`;
+    lineEl.textContent = `${formatCompactNumber(stats.authors)} ${authorLabel} debating here with ${formatCompactNumber(
+      stats.votes
+    )} ${pluralize(stats.votes, "vote")} and ${formatCompactNumber(stats.comments)} ${pluralize(stats.comments, "comment")}.`;
+
+    const statItems = [
+      { value: stats.takes, label: pluralize(stats.takes, "take") },
+      { value: stats.votes, label: pluralize(stats.votes, "vote") },
+      { value: stats.comments, label: pluralize(stats.comments, "comment") },
+      { value: stats.heated, label: "heated" },
+    ];
+
+    statsEl.innerHTML = statItems
+      .map(
+        (item) => `
+          <span class="hashtag-pulse__stat">
+            <strong>${window.ClashlyUtils.escapeHtml(formatCompactNumber(item.value))}</strong>
+            <span>${window.ClashlyUtils.escapeHtml(item.label)}</span>
+          </span>
+        `
+      )
+      .join("");
+    pulseEl.hidden = false;
+  }
+
+  function computeRelatedHashtags() {
+    const counts = new Map();
+    currentFeedTakes.forEach((take) => {
+      const tags = Array.isArray(take && take.hashtags) ? take.hashtags : [];
+      tags.forEach((tag) => {
+        const safeTag = String(tag || "").toLowerCase();
+        if (!safeTag || safeTag === currentTag) return;
+        counts.set(safeTag, (counts.get(safeTag) || 0) + 1);
+      });
+    });
+
+    return Array.from(counts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+      .slice(0, 8);
+  }
+
+  function renderRelatedHashtags() {
+    const wrapEl = document.getElementById("hashtag-related");
+    const chipsEl = document.getElementById("hashtag-related-chips");
+    if (!wrapEl || !chipsEl) return;
+
+    const related = computeRelatedHashtags();
+    if (!related.length) {
+      wrapEl.hidden = true;
+      chipsEl.innerHTML = "";
+      return;
+    }
+
+    wrapEl.hidden = false;
+    chipsEl.innerHTML = related
+      .map(
+        (item) => `
+          <a class="hashtag-chip" href="hashtag.html?tag=${encodeURIComponent(item.tag)}">
+            <span>#${window.ClashlyUtils.escapeHtml(item.tag)}</span>
+            <span class="hashtag-chip__count">${item.count}</span>
+          </a>
+        `
+      )
+      .join("");
+  }
+
+  function setActiveTabUI() {
+    const buttons = document.querySelectorAll("[data-hashtag-tab]");
+    buttons.forEach((button) => {
+      const isActive = button.getAttribute("data-hashtag-tab") === currentSortTab;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+  }
+
+  function bindSortTabs() {
+    const tabsEl = document.querySelector(".hashtag-tabs");
+    if (!tabsEl || tabsEl.dataset.tabsBound === "true") return;
+
+    tabsEl.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest("[data-hashtag-tab]");
+      if (!button) return;
+
+      const nextTab = button.getAttribute("data-hashtag-tab") || "new";
+      if (nextTab === currentSortTab) return;
+
+      currentSortTab = nextTab;
+      setActiveTabUI();
+      loadFeed({ append: false }).catch(() => {});
+    });
+
+    tabsEl.dataset.tabsBound = "true";
+  }
+
+  async function handleCopyLink(button) {
+    if (!(button instanceof HTMLButtonElement) || button.dataset.copying === "true") return;
+    const labelEl = button.querySelector("[data-copy-label]");
+
+    button.dataset.copying = "true";
+    try {
+      await window.ClashlyUtils.copyText(window.location.href);
+      button.classList.add("is-copied");
+      if (labelEl) labelEl.textContent = "Copied";
+    } catch (error) {
+      window.ClashlyUtils.reportError("Copy hashtag link failed.", error, "Could not copy link.");
+    } finally {
+      window.setTimeout(() => {
+        button.classList.remove("is-copied");
+        if (labelEl) labelEl.textContent = "Copy link";
+        button.dataset.copying = "false";
+      }, 1700);
+    }
+  }
+
+  function bindCopyLink() {
+    const button = document.getElementById("hashtag-copy-link");
+    if (!button || button.dataset.copyBound === "true") return;
+
+    button.addEventListener("click", () => {
+      handleCopyLink(button).catch(() => {});
+    });
+
+    button.dataset.copyBound = "true";
   }
 
   function updateTakeVoteState(takeId, patch) {
@@ -150,6 +333,7 @@
         vote: reconciledVote,
       });
       syncHashtagTakeState(input.takeId);
+      renderHashtagPulse();
       setFeedState("", "");
     } catch (error) {
       updateTakeVoteState(input.takeId, {
@@ -157,6 +341,7 @@
         vote: previousVote || target.vote,
       });
       syncHashtagTakeState(input.takeId);
+      renderHashtagPulse();
       throw error;
     }
   }
@@ -230,6 +415,7 @@
         limit: PAGE_SIZE,
         currentUserId,
         cursor: append ? nextCursor : null,
+        tab: currentSortTab,
       });
 
       if (result.error) {
@@ -241,6 +427,8 @@
       nextCursor = result.nextCursor || null;
       hasMore = Boolean(result.hasMore);
       renderFeed();
+      renderHashtagPulse();
+      renderRelatedHashtags();
       setFeedState(currentFeedTakes.length ? "" : `No takes found for #${currentTag} yet.`, "");
     } catch (error) {
       setFeedState(window.ClashlyUtils.reportError("Hashtag feed load failed.", error, "Could not load this hashtag."), "error");
@@ -257,6 +445,7 @@
       vote_loading: false,
     });
     syncHashtagTakeState(detail.takeId);
+    renderHashtagPulse();
   }
 
   function handleTakeBookmarkUpdated(event) {
@@ -304,6 +493,9 @@
       window.addEventListener("clashly:take-updated", handleTakeUpdated);
       window.addEventListener("clashly:take-bookmark-updated", handleTakeBookmarkUpdated);
       bindInfiniteScroll();
+      bindSortTabs();
+      bindCopyLink();
+      setActiveTabUI();
 
       const sessionState = await window.ClashlySession.resolveSession();
       currentUserId = sessionState.user ? sessionState.user.id : "";
